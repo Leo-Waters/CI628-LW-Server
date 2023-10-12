@@ -26,21 +26,15 @@
 
 package com.almasb.fxglgames.pong;
 
-import com.almasb.fxgl.animation.Interpolators;
 import com.almasb.fxgl.app.ApplicationMode;
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
-import com.almasb.fxgl.core.math.FXGLMath;
 import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.entity.SpawnData;
-import com.almasb.fxgl.input.UserAction;
 import com.almasb.fxgl.net.*;
-import com.almasb.fxgl.physics.CollisionHandler;
-import com.almasb.fxgl.physics.HitBox;
 import com.almasb.fxgl.ui.UI;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
-import javafx.util.Duration;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -52,87 +46,34 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
-import static com.almasb.fxglgames.pong.NetworkMessages.*;
+
 
 /**
- * A simple clone of Pong.
- * Sounds from https://freesound.org/people/NoiseCollector/sounds/4391/ under CC BY 3.0.
+ * Server for Dungen Crawler
  *
- * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
+ *
+ * @author Leo Waters
  */
-public class PongApp extends GameApplication implements MessageHandler<String> {
+public class DungenServer extends GameApplication implements MessageHandler<String> {
 
     @Override
     protected void initSettings(GameSettings settings) {
-        settings.setTitle("Pong");
+        settings.setTitle("Dungen Crawler Server");
         settings.setVersion("1.0");
         settings.setFontUI("pong.ttf");
         settings.setApplicationMode(ApplicationMode.DEBUG);
     }
 
-    private Entity player1;
-    private Entity player2;
-    private Entity ball;
-    private BatComponent player1Bat;
-    private BatComponent player2Bat;
+    private Entity[] players= new Entity[4];
 
     private Server<String> server;
 
     @Override
-    protected void initInput() {
-        getInput().addAction(new UserAction("Up1") {
-            @Override
-            protected void onAction() {
-                player1Bat.up();
-            }
-
-            @Override
-            protected void onActionEnd() {
-                player1Bat.stop();
-            }
-        }, KeyCode.W);
-
-        getInput().addAction(new UserAction("Down1") {
-            @Override
-            protected void onAction() {
-                player1Bat.down();
-            }
-
-            @Override
-            protected void onActionEnd() {
-                player1Bat.stop();
-            }
-        }, KeyCode.S);
-
-        getInput().addAction(new UserAction("Up2") {
-            @Override
-            protected void onAction() {
-                player2Bat.up();
-            }
-
-            @Override
-            protected void onActionEnd() {
-                player2Bat.stop();
-            }
-        }, KeyCode.I);
-
-        getInput().addAction(new UserAction("Down2") {
-            @Override
-            protected void onAction() {
-                player2Bat.down();
-            }
-
-            @Override
-            protected void onActionEnd() {
-                player2Bat.stop();
-            }
-        }, KeyCode.K);
-    }
-
-    @Override
     protected void initGameVars(Map<String, Object> vars) {
-        vars.put("player1score", 0);
-        vars.put("player2score", 0);
+        vars.put("player1Health", 100);
+        vars.put("player2Health", 100);
+        vars.put("player3Health", 100);
+        vars.put("player4Health", 100);
     }
 
     @Override
@@ -146,7 +87,7 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
             connection.addMessageHandlerFX(this);
         });
 
-        getGameWorld().addEntityFactory(new PongFactory());
+        getGameWorld().addEntityFactory(new DungenFactory());
         getGameScene().setBackgroundColor(Color.rgb(0, 0, 5));
 
         initScreenBounds();
@@ -161,100 +102,78 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
     protected void initPhysics() {
         getPhysicsWorld().setGravity(0, 0);
 
-        getPhysicsWorld().addCollisionHandler(new CollisionHandler(EntityType.BALL, EntityType.WALL) {
-            @Override
-            protected void onHitBoxTrigger(Entity a, Entity b, HitBox boxA, HitBox boxB) {
-                if (boxB.getName().equals("LEFT")) {
-                    inc("player2score", +1);
 
-                    server.broadcast("SCORES," + geti("player1score") + "," + geti("player2score"));
-
-                    server.broadcast(HIT_WALL_LEFT);
-                } else if (boxB.getName().equals("RIGHT")) {
-                    inc("player1score", +1);
-
-                    server.broadcast("SCORES," + geti("player1score") + "," + geti("player2score"));
-
-                    server.broadcast(HIT_WALL_RIGHT);
-                } else if (boxB.getName().equals("TOP")) {
-                    server.broadcast(HIT_WALL_UP);
-                } else if (boxB.getName().equals("BOT")) {
-                    server.broadcast(HIT_WALL_DOWN);
-                }
-
-                getGameScene().getViewport().shakeTranslational(5);
-            }
-        });
-
-        CollisionHandler ballBatHandler = new CollisionHandler(EntityType.BALL, EntityType.PLAYER_BAT) {
-            @Override
-            protected void onCollisionBegin(Entity a, Entity bat) {
-                playHitAnimation(bat);
-
-                server.broadcast(bat == player1 ? BALL_HIT_BAT1 : BALL_HIT_BAT2);
-            }
-        };
-
-        getPhysicsWorld().addCollisionHandler(ballBatHandler);
-        getPhysicsWorld().addCollisionHandler(ballBatHandler.copyFor(EntityType.BALL, EntityType.ENEMY_BAT));
     }
-
+    UI ui;
     @Override
     protected void initUI() {
         MainUIController controller = new MainUIController();
-        UI ui = getAssetLoader().loadUI("main.fxml", controller);
-
-        controller.getLabelScorePlayer().textProperty().bind(getip("player1score").asString());
-        controller.getLabelScoreEnemy().textProperty().bind(getip("player2score").asString());
-
+        ui= getAssetLoader().loadUI("main.fxml", controller);
         getGameScene().addUI(ui);
+        UpdateUI();
+    }
+
+    void UpdateUI(){
+
+        for(int i=0;i<players.length;i++)
+        {
+            //add possesion detection coe
+            //players[i].getComponent()
+            boolean isPossed=false;
+            ((MainUIController)ui.getController()).ShowPlayerPossessionState(i,isPossed);
+        }
     }
 
     @Override
     protected void onUpdate(double tpf) {
         if (!server.getConnections().isEmpty()) {
-            var message = "GAME_DATA," + player1.getY() + "," + player2.getY() + "," + ball.getX() + "," + ball.getY();
-
-            server.broadcast(message);
+            BroadCastPlayerUpdates();
         }
     }
 
-    private void initScreenBounds() {
-        Entity walls = entityBuilder()
-                .type(EntityType.WALL)
-                .collidable()
-                .buildScreenBounds(150);
+    void BroadCastPlayerUpdates(){
 
-        getGameWorld().addEntity(walls);
+        for(int i=0;i<players.length;i++)//send updates for each players data
+        {
+            var message = "PLAYER_DATA,"+i+"," + players[i].getX() + "," + players[i].getY()+",IDLE,|";
+            server.broadcast(message);
+        }
+
+    }
+
+
+    private void initScreenBounds() {
+        //Entity walls = entityBuilder()
+        //        .type(EntityType.WALL)
+        //        .collidable()
+        //        .buildScreenBounds(150);
+
+        //getGameWorld().addEntity(walls);
     }
 
     private void initGameObjects() {
-        ball = spawn("ball", getAppWidth() / 2 - 5, getAppHeight() / 2 - 5);
-        player1 = spawn("bat", new SpawnData(getAppWidth() / 4, getAppHeight() / 2 - 30).put("isPlayer", true));
-        player2 = spawn("bat", new SpawnData(3 * getAppWidth() / 4 - 20, getAppHeight() / 2 - 30).put("isPlayer", false));
 
-        player1Bat = player1.getComponent(BatComponent.class);
-        player2Bat = player2.getComponent(BatComponent.class);
+        for(int i=0;i<players.length;i++)
+        {
+         players[i]=spawn("Player", new SpawnData(100*i, 100));
+        }
+
+        //player1Bat = player1.getComponent(BatComponent.class);
+        //player2Bat = player2.getComponent(BatComponent.class);
     }
 
-    private void playHitAnimation(Entity bat) {
-        animationBuilder()
-                .autoReverse(true)
-                .duration(Duration.seconds(0.5))
-                .interpolator(Interpolators.BOUNCE.EASE_OUT())
-                .rotate(bat)
-                .from(FXGLMath.random(-25, 25))
-                .to(0)
-                .buildAndPlay();
-    }
 
     @Override
     public void onReceive(Connection<String> connection, String message) {
         var tokens = message.split(",");
 
         Arrays.stream(tokens).skip(1).forEach(key -> {
+
+            System.out.println("Key"+key);
+
             if (key.endsWith("_DOWN")) {
                 getInput().mockKeyPress(KeyCode.valueOf(key.substring(0, 1)));
+
             } else if (key.endsWith("_UP")) {
                 getInput().mockKeyRelease(KeyCode.valueOf(key.substring(0, 1)));
             }

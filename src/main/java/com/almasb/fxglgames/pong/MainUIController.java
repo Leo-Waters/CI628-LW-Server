@@ -28,53 +28,46 @@ package com.almasb.fxglgames.pong;
 
 import com.almasb.fxgl.dsl.FXGL;
 import com.almasb.fxgl.ui.UIController;
-import javafx.animation.FadeTransition;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
-import javafx.util.Duration;
 
 /**
- * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
+ * @author Leo waters
  */
 public class MainUIController implements UIController {
 
     @FXML
-    private Label labelScorePlayer;
-
+    private Label Player1;
     @FXML
-    private Label labelScoreEnemy;
+    private Label Player2;
+    @FXML
+    private Label Player3;
+    @FXML
+    private Label Player4;
 
-    public Label getLabelScoreEnemy() {
-        return labelScoreEnemy;
-    }
-
-    public Label getLabelScorePlayer() {
-        return labelScorePlayer;
+    public void ShowPlayerPossessionState(int player, boolean Possessed){
+        switch (player){
+            case 0:
+                Player1.setText(Possessed?"Player HasClient":"Player Is Idle");
+                break;
+            case 1:
+                Player2.setText(Possessed?"Player HasClient":"Player Is Idle");
+                break;
+            case 2:
+                Player3.setText(Possessed?"Player HasClient":"Player Is Idle");
+                break;
+            case 3:
+                Player4.setText(Possessed?"Player HasClient":"Player Is Idle");
+                break;
+        }
     }
 
     @Override
     public void init() {
-        labelScorePlayer.setFont(FXGL.getUIFactory().newFont(72));
-        labelScoreEnemy.setFont(FXGL.getUIFactory().newFont(72));
-
-        labelScoreEnemy.layoutBoundsProperty().addListener((observable, oldValue, newBounds) -> {
-            double width = newBounds.getWidth();
-            labelScoreEnemy.setTranslateX(800 - 100 - width);
-        });
-
-        labelScorePlayer.textProperty().addListener((observable, oldValue, newValue) -> {
-            animateLabel(labelScorePlayer);
-        });
-
-        labelScoreEnemy.textProperty().addListener((observable, oldValue, newValue) -> {
-            animateLabel(labelScoreEnemy);
-        });
+        Player1.setFont(FXGL.getUIFactory().newFont(18));
+        Player2.setFont(FXGL.getUIFactory().newFont(18));
+        Player3.setFont(FXGL.getUIFactory().newFont(18));
+        Player4.setFont(FXGL.getUIFactory().newFont(18));
     }
 
-    private void animateLabel(Label label) {
-        FadeTransition ft = new FadeTransition(Duration.seconds(0.33), label);
-        ft.setFromValue(0);
-        ft.setToValue(1);
-        ft.play();
-    }
 }

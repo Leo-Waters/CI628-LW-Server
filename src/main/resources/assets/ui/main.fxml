@@ -7,7 +7,10 @@
 <Pane prefWidth="800" prefHeight="600" xmlns="http://javafx.com/javafx/8.0.60"
       xmlns:fx="http://javafx.com/fxml/1">
 
-    <Label translateX="100" translateY="100" fx:id="labelScorePlayer" textFill="azure" />
-    <Label translateX="700" translateY="100" fx:id="labelScoreEnemy" textFill="azure" />
+    <Label translateX="10" translateY="10" fx:id="Player1" textFill="azure" />
+    <Label translateX="10" translateY="30" fx:id="Player2" textFill="azure" />
+    <Label translateX="10" translateY="50" fx:id="Player3" textFill="azure" />
+    <Label translateX="10" translateY="70" fx:id="Player4" textFill="azure" />
+
 
 </Pane>

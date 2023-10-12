@@ -26,34 +26,39 @@
 
 package com.almasb.fxglgames.pong;
 
-import com.almasb.fxgl.dsl.FXGL;
-import com.almasb.fxgl.entity.component.Component;
+import com.almasb.fxgl.entity.Entity;
+import com.almasb.fxgl.entity.EntityFactory;
+import com.almasb.fxgl.entity.SpawnData;
+import com.almasb.fxgl.entity.Spawns;
+import com.almasb.fxgl.entity.components.CollidableComponent;
+import com.almasb.fxgl.particle.ParticleComponent;
+import com.almasb.fxgl.particle.ParticleEmitter;
+import com.almasb.fxgl.particle.ParticleEmitters;
+import com.almasb.fxgl.physics.BoundingShape;
+import com.almasb.fxgl.physics.HitBox;
 import com.almasb.fxgl.physics.PhysicsComponent;
+import com.almasb.fxgl.physics.box2d.dynamics.BodyType;
+import com.almasb.fxgl.physics.box2d.dynamics.FixtureDef;
+import javafx.beans.binding.Bindings;
+import javafx.scene.effect.BlendMode;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+
+import static com.almasb.fxgl.dsl.FXGL.*;
 
 /**
- * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
+ * @author Leo Waters
  */
-public class BatComponent extends Component {
+public class DungenFactory implements EntityFactory {
+    @Spawns("Player")
+    public Entity newPlayer(SpawnData data) {
+        PhysicsComponent physics = new PhysicsComponent();
+        physics.setBodyType(BodyType.KINEMATIC);
 
-    private static final double BAT_SPEED = 420;
-
-    protected PhysicsComponent physics;
-
-    public void up() {
-        if (entity.getY() >= BAT_SPEED / 60)
-            physics.setVelocityY(-BAT_SPEED);
-        else
-            stop();
-    }
-
-    public void down() {
-        if (entity.getBottomY() <= FXGL.getAppHeight() - (BAT_SPEED / 60))
-            physics.setVelocityY(BAT_SPEED);
-        else
-            stop();
-    }
-
-    public void stop() {
-        physics.setLinearVelocity(0, 0);
+        return entityBuilder(data)
+                .viewWithBBox(new Rectangle(20, 20, Color.LIGHTGRAY))
+                .with(new CollidableComponent(true))
+                .with(physics)
+                .build();
     }
 }
