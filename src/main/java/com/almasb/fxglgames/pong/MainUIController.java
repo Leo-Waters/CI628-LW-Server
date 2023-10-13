@@ -48,16 +48,16 @@ public class MainUIController implements UIController {
     public void ShowPlayerPossessionState(int player, boolean Possessed){
         switch (player){
             case 0:
-                Player1.setText(Possessed?"Player HasClient":"Player Is Idle");
+                Player1.setText(Possessed?"Player Has Client":"Player Is Idle");
                 break;
             case 1:
-                Player2.setText(Possessed?"Player HasClient":"Player Is Idle");
+                Player2.setText(Possessed?"Player Has Client":"Player Is Idle");
                 break;
             case 2:
-                Player3.setText(Possessed?"Player HasClient":"Player Is Idle");
+                Player3.setText(Possessed?"Player Has Client":"Player Is Idle");
                 break;
             case 3:
-                Player4.setText(Possessed?"Player HasClient":"Player Is Idle");
+                Player4.setText(Possessed?"Player Has Client":"Player Is Idle");
                 break;
         }
     }
