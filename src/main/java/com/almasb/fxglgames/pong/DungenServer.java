@@ -41,7 +41,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -144,6 +146,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     @Override
     protected void onUpdate(double tpf) {
         if (!server.getConnections().isEmpty()) {
+
             UpdateUI();
             BroadCastPlayerUpdates();
         }
@@ -153,6 +156,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         for(int i=0;i<players.length;i++)//send updates for each players data
         {
+
             var message = "PLAYER_DATA,"+i+"," + players[i].getX() + "," + players[i].getY()+",IDLE,|";
             server.broadcast(message);
         }
@@ -176,8 +180,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
          players[i]=spawn("Player", new SpawnData(100*i, 100));
         }
 
-        //player1Bat = player1.getComponent(BatComponent.class);
-        //player2Bat = player2.getComponent(BatComponent.class);
     }
 
 
@@ -188,33 +190,50 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         int PlayerID=connection.getLocalSessionData().getInt("ID");
 
+
+        if(PlayerID==-1){
+            for (int i = 0; i < 4; i++) {
+                if(!ConnectionIDs[i]){
+                    connection.getLocalSessionData().setValue("ID",i);
+                    break;
+                }
+            }
+
+        }
+
         for (int i = 0; i < Commands.length; i++) {
             var Data=Commands[i];
 
             StringBuilder ArgDebugString= new StringBuilder(" Args: ");
 
-            var comand="";
-
+            var command="";
+            List<String> CommandArgs = new ArrayList<String>();
             if(Data.contains((","))){
 
                 var args=Data.split(",");
-                comand=args[0];
+                command=args[0];
                 for (int a = 1; a < args.length; a++){//skip first as is command name
                     ArgDebugString.append(args[a]).append(", ");
+                    CommandArgs.add(args[a]);
                 }
             }else {
-                comand=Data;
+                command=Data;
                 ArgDebugString.delete(0,ArgDebugString.length());
                 ArgDebugString.append(" No Args");
             }
 
-            System.out.println("comand: "+comand+ArgDebugString);
+            System.out.println("Player:"+PlayerID+" sent "+"command: "+command+ArgDebugString);
 
-            if(comand.equals("PlayerDisconnected")){
+            if(command.equals("PlayerDisconnected")){
                 if(PlayerID!=-1){
                     ConnectionIDs[PlayerID]=false;
                 }
 
+            }
+            if(PlayerID!=-1) {
+                if (command.equals("KEY")) {
+                    players[PlayerID].getComponent(PlayerControllerComponent.class).UpdateKey(CommandArgs.get(0));
+                }
             }
         }
     }

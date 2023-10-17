@@ -53,12 +53,13 @@ public class DungenFactory implements EntityFactory {
     @Spawns("Player")
     public Entity newPlayer(SpawnData data) {
         PhysicsComponent physics = new PhysicsComponent();
-        physics.setBodyType(BodyType.KINEMATIC);
+        physics.setBodyType(BodyType.DYNAMIC);
 
         return entityBuilder(data)
-                .viewWithBBox(new Rectangle(20, 20, Color.LIGHTGRAY))
+                .viewWithBBox(new Rectangle(40, 40, Color.LIGHTGRAY))
                 .with(new CollidableComponent(true))
                 .with(physics)
+                .with(new PlayerControllerComponent())
                 .build();
     }
 }
