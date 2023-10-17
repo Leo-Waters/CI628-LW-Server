@@ -66,9 +66,9 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     }
 
     private Entity[] players= new Entity[4];
-
+    private boolean[] ConnectionIDs={false,false,false,false};
     private Server<String> server;
-    int PlayersConnected=0;
+
 
     @Override
     protected void initGameVars(Map<String, Object> vars) {
@@ -87,14 +87,22 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         server.setOnConnected(connection -> {
             System.out.println("Player Connected!");
-            PlayersConnected++;
+
+            boolean AssignedAPlayerID=false;
+            for (int i = 0; i < 4; i++) {
+                if(!ConnectionIDs[i]){
+                    AssignedAPlayerID=ConnectionIDs[i]=true;
+                    connection.getLocalSessionData().setValue("ID",i);
+                    break;
+                }
+            }
+            if(!AssignedAPlayerID){
+                connection.getLocalSessionData().setValue("ID",-1);
+            }
+
             connection.addMessageHandlerFX(this);
         });
 
-        server.setOnDisconnected(Disconnected->{
-            System.out.println("Player Disconnected!");
-            PlayersConnected--;
-        });
 
         getGameWorld().addEntityFactory(new DungenFactory());
         getGameScene().setBackgroundColor(Color.rgb(0, 0, 5));
@@ -128,7 +136,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         {
             //add possesion detection coe
             //players[i].getComponent()
-            boolean isPossed= PlayersConnected>i;
+            boolean isPossed= ConnectionIDs[i];
             ((MainUIController)ui.getController()).ShowPlayerPossessionState(i,isPossed);
         }
     }
@@ -178,6 +186,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         String[] Commands=message.split("\\|");
 
+        int PlayerID=connection.getLocalSessionData().getInt("ID");
+
         for (int i = 0; i < Commands.length; i++) {
             var Data=Commands[i];
 
@@ -201,7 +211,10 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             System.out.println("comand: "+comand+ArgDebugString);
 
             if(comand.equals("PlayerDisconnected")){
-                PlayersConnected--;
+                if(PlayerID!=-1){
+                    ConnectionIDs[PlayerID]=false;
+                }
+
             }
         }
     }
@@ -249,11 +262,9 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
                 } catch (Exception e) {
 
-                    var message = new String("PlayerDisconnected,1,test|");
-                    var message2 = new String("PlayerDisconnectedNoArgs|");
+                    var message = new String("PlayerDisconnected|");
                     try {
                         messages.put(message);
-                        messages.put(message2);
                     } catch (InterruptedException ex) {
                         throw new RuntimeException(ex);
                     }
