@@ -56,10 +56,35 @@ public class DungenFactory implements EntityFactory {
         physics.setBodyType(BodyType.DYNAMIC);
 
         return entityBuilder(data)
-                .viewWithBBox(new Rectangle(40, 40, Color.LIGHTGRAY))
+                .viewWithBBox(new Rectangle(40, 40, Color.BLUE))
                 .with(new CollidableComponent(true))
                 .with(physics)
                 .with(new PlayerControllerComponent())
                 .build();
     }
+    @Spawns("Wall")
+    public Entity newWall(SpawnData data) {
+        PhysicsComponent physics = new PhysicsComponent();
+        physics.setBodyType(BodyType.STATIC);
+
+        return entityBuilder(data)
+                .viewWithBBox(new Rectangle(40, 40, Color.DIMGRAY))
+                .with(new CollidableComponent(true))
+                .with(physics)
+                .build();
+    }
+
+    @Spawns("Enemy")
+    public Entity newNPC(SpawnData data) {
+        PhysicsComponent physics = new PhysicsComponent();
+        physics.setBodyType(BodyType.DYNAMIC);
+
+        return entityBuilder(data)
+                .viewWithBBox(new Rectangle(40, 40, Color.RED))
+                .with(new CollidableComponent(true))
+                .with(physics)
+                .with(new Enemy_Component())
+                .build();
+    }
+
 }
