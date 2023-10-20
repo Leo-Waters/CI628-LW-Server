@@ -6,10 +6,13 @@ import com.almasb.fxgl.physics.PhysicsComponent;
 public class PlayerControllerComponent extends Component {
 
     private static final double PLAYER_SPEED = 100;
+    private static final float PLAYER_MAX_HEALTH = 100;
 
     protected PhysicsComponent physics;
 
     private boolean up=false,down=false,left=false,right=false;
+
+    public float Health=PLAYER_MAX_HEALTH;
 
     public void UpdateKey(String Info){
         var key=Info.charAt(0);

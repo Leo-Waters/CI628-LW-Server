@@ -68,7 +68,7 @@ public class DungenFactory implements EntityFactory {
         physics.setBodyType(BodyType.STATIC);
 
         return entityBuilder(data)
-                .viewWithBBox(new Rectangle(40, 40, Color.DIMGRAY))
+                .viewWithBBox(new Rectangle(LevelManager.TileSize, LevelManager.TileSize, Color.DIMGRAY))
                 .with(new CollidableComponent(true))
                 .with(physics)
                 .build();
