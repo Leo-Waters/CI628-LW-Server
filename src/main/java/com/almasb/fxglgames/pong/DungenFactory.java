@@ -31,6 +31,7 @@ import com.almasb.fxgl.entity.EntityFactory;
 import com.almasb.fxgl.entity.SpawnData;
 import com.almasb.fxgl.entity.Spawns;
 import com.almasb.fxgl.entity.components.CollidableComponent;
+import com.almasb.fxgl.entity.components.TransformComponent;
 import com.almasb.fxgl.particle.ParticleComponent;
 import com.almasb.fxgl.particle.ParticleEmitter;
 import com.almasb.fxgl.particle.ParticleEmitters;
@@ -62,6 +63,15 @@ public class DungenFactory implements EntityFactory {
                 .with(new PlayerControllerComponent())
                 .build();
     }
+
+    @Spawns("Spell")
+    public Entity newSpell(SpawnData data) {
+        return entityBuilder(data)
+                .viewWithBBox(new Rectangle(20, 20, Color.RED))
+                .with(new SpellComponent())
+                .build();
+    }
+
     @Spawns("Wall")
     public Entity newWall(SpawnData data) {
         PhysicsComponent physics = new PhysicsComponent();

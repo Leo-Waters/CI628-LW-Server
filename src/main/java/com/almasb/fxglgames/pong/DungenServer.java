@@ -70,6 +70,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     private PlayerControllerComponent[] players= new PlayerControllerComponent[4];
     public Entity[] enemys=new Entity[20];
 
+    public SpellComponent[] Spells=new SpellComponent[20];
+
     public  LevelManager LevelManager= new LevelManager();
     private boolean[] ConnectionIDs={false,false,false,false};
     private Server<String> server;
@@ -169,6 +171,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     protected void onUpdate(double tpf) {
         if (!server.getConnections().isEmpty()) {
 
+
+
             UpdateUI();
             BroadCastPlayerUpdates();
         }
@@ -206,15 +210,19 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
     private void initGameObjects() {
 
+        for (int i = 0; i < Spells.length; i++) {
+            Spells[i]=spawn("Spell", new SpawnData(-1000+(i*40), -1000)).getComponent(SpellComponent.class);
+        }
         for (int i = 0; i < players.length; i++) {
             players[i]=spawn("Player", new SpawnData(-1000+(i*40), -1000)).getComponent(PlayerControllerComponent.class);
-
+            players[i].spellsPool=Spells;
         }
 
         for (int i = 0; i < enemys.length; i++) {
             enemys[i]=spawn("Enemy", new SpawnData(-1000+(i*40), -1000));
             enemys[i].getComponent(Enemy_Component.class).Setup(players);
         }
+
 
         LevelManager.NextLevel(players,enemys);
     }
