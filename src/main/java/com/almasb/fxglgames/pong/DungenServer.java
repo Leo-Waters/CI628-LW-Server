@@ -37,6 +37,7 @@ import com.almasb.fxgl.ui.UI;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -68,7 +69,10 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     }
 
     private PlayerControllerComponent[] players= new PlayerControllerComponent[4];
-    public Entity[] enemys=new Entity[20];
+    public Enemy_Component[] enemys= new Enemy_Component[20];
+
+    //if true will force game stat update, used for when new clients join
+    public boolean UpdateOveride=false;
 
     public SpellComponent[] Spells=new SpellComponent[20];
 
@@ -94,25 +98,26 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
 
 
-        server.setOnConnected(connection -> {
+        server.setOnConnected(connection -> {//called when client connects
             System.out.println("Player Connected!");
 
-            boolean AssignedAPlayerID=false;
+            boolean AssignedAPlayerID=false;//player hasn't been assigned an ID
             for (int i = 0; i < 4; i++) {
-                if(!ConnectionIDs[i]){
-                    AssignedAPlayerID=ConnectionIDs[i]=true;
-                    connection.getLocalSessionData().setValue("ID",i);
-                    connection.send("ID,"+i+",|");
+
+                if(!ConnectionIDs[i]){//if Connection ID == false
+                    AssignedAPlayerID=ConnectionIDs[i]=true;// has assign Player ID
+                    connection.getLocalSessionData().setValue("ID",i);//set Connection ID
+                    connection.send("ID,"+i+",|");//send ID to Client
                     break;
                 }
             }
-            if(!AssignedAPlayerID){
+            if(!AssignedAPlayerID){//hasn't Received ID, set to -1 as spectator
                 connection.getLocalSessionData().setValue("ID",-1);
             }
 
+            //send current level file----------------------------------------------------------------------
             Level level=LevelManager.GetCurrent();
             connection.send("LEVELUPDATE,"+(LevelManager.CurrentLevel+1)+","+level.Width+","+level.Height+",|");
-
             for (int y=0; y<level.Height; y++){
                 StringBuilder RowUpdate= new StringBuilder("LEVELDATA,"+y);
 
@@ -123,9 +128,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                 connection.send(RowUpdate.toString());
 
             }
-
-
             connection.send("LEVELUPDATECOMPLETE|");
+
             connection.addMessageHandlerFX(this);
         });
 
@@ -144,7 +148,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     @Override
     protected void initPhysics() {
         getPhysicsWorld().setGravity(0, 0);
-
 
     }
     UI ui;
@@ -171,29 +174,66 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     protected void onUpdate(double tpf) {
         if (!server.getConnections().isEmpty()) {
 
-
-
+            if(LevelManager.ShouldUpdate){
+                BroadCastLevelUpdate();
+                LevelManager.ShouldUpdate=false;
+            }
             UpdateUI();
             BroadCastPlayerUpdates();
+        }else{
+            //no players connected, level file will be sent individualy as they join to save repeating the message
+            if(LevelManager.ShouldUpdate) {
+                LevelManager.ShouldUpdate=false;
+            }
         }
+    }
+
+    void BroadCastLevelUpdate(){
+        Level level=LevelManager.GetCurrent();
+        server.broadcast("LEVELUPDATE,"+(LevelManager.CurrentLevel+1)+","+level.Width+","+level.Height+",|");
+        for (int y=0; y<level.Height; y++){
+            StringBuilder RowUpdate= new StringBuilder("LEVELDATA,"+y);
+
+            for (int x=0; x<level.Width; x++){
+                RowUpdate.append(",").append(level.LevelData[y][x]);
+            }
+            RowUpdate.append(",|");
+            server.broadcast(RowUpdate.toString());
+
+        }
+        server.broadcast("LEVELUPDATECOMPLETE|");
     }
 
     void BroadCastPlayerUpdates(){
 
         for(int i=0;i<players.length;i++)//send updates for each players data
         {
+            if(players[i].ShouldUpdate||UpdateOveride){
+                var message = "PLAYER_DATA,"+i+"," + players[i].getEntity().getX() + "," + players[i].getEntity().getY()+","+(ConnectionIDs[i]?"ACTIVE" :"IDLE")+","+players[i].GetHealth()+","+players[i].getAngle()+","+players[i].getKills()+",|";
+                server.broadcast(message);
+                players[i].ShouldUpdate=false;
+            }
 
-            var message = "PLAYER_DATA,"+i+"," + players[i].getEntity().getX() + "," + players[i].getEntity().getY()+","+(ConnectionIDs[i]?"ACTIVE" :"IDLE")+","+players[i].Health+",|";
-            server.broadcast(message);
         }
 
         for(int i=0;i<enemys.length;i++)//send updates for each players data
         {
-            if(enemys[i]!=null){
-                var message = "ENEMY_DATA,"+i+"," + enemys[i].getX() + "," + enemys[i].getY()+","+enemys[i].getComponent(Enemy_Component.class).Health+",|";
+            if(enemys[i].ShouldUpdate||UpdateOveride){
+                var message = "ENEMY_DATA,"+i+"," + enemys[i].getEntity().getX() + "," + enemys[i].getEntity().getY()+","+enemys[i].GetHealth()+",|";
                 server.broadcast(message);
+                enemys[i].ShouldUpdate=false;
             }
 
+        }
+
+        for (int s = 0; s < Spells.length; s++) {
+            if(Spells[s].HasServerUpdate()){//does the spell have an update
+                server.broadcast(Spells[s].GetServerUpdate(s));//send the update to clients
+            }
+        }
+
+        if(UpdateOveride){//update override was performed
+            UpdateOveride=false;
         }
 
     }
@@ -216,13 +256,15 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         for (int i = 0; i < players.length; i++) {
             players[i]=spawn("Player", new SpawnData(-1000+(i*40), -1000)).getComponent(PlayerControllerComponent.class);
             players[i].spellsPool=Spells;
+            players[i].PlayerID=i;
         }
 
         for (int i = 0; i < enemys.length; i++) {
-            enemys[i]=spawn("Enemy", new SpawnData(-1000+(i*40), -1000));
-            enemys[i].getComponent(Enemy_Component.class).Setup(players);
+            enemys[i]=spawn("Enemy", new SpawnData(-1000+(i*40), -1000)).getComponent(Enemy_Component.class);
+            enemys[i].Setup(players);
         }
 
+        SpellComponent.Enemys=enemys;
 
         LevelManager.NextLevel(players,enemys);
     }
@@ -237,13 +279,32 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         int PlayerID=connection.getLocalSessionData().getInt("ID");
 
 
-        if(PlayerID==-1){
+        if(PlayerID==-1){//assign and ID to a spectator
             for (int i = 0; i < 4; i++) {
                 if(!ConnectionIDs[i]){
+                    ConnectionIDs[i]=true;
                     connection.getLocalSessionData().setValue("ID",i);
                     connection.send("ID,"+i+",|");
                     break;
                 }
+            }
+
+        }
+
+        if(PlayerID!=-1&&players[PlayerID].IsDead()){//assign a new ID to a dead player
+            int NewID=-1;
+            for (int i = 0; i < 4; i++) {
+                if(!ConnectionIDs[i]&& !players[i].IsDead()){
+                    NewID=i;
+                    ConnectionIDs[PlayerID]=false;
+                    ConnectionIDs[i]=true;
+                    connection.getLocalSessionData().setValue("ID",i);
+                    connection.send("ID,"+i+",|");
+                    break;
+                }
+            }
+            if(NewID!=-1){
+                PlayerID=NewID;
             }
 
         }
@@ -277,9 +338,14 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                 }
 
             }
-            if(PlayerID!=-1) {
+            else if(command.equals("GAMESTATE")){//player is requesting an update of the game state to sync
+                UpdateOveride=true;
+            }
+            else if(PlayerID!=-1) {
                 if (command.equals("KEY")) {
                     players[PlayerID].getEntity().getComponent(PlayerControllerComponent.class).UpdateKey(CommandArgs.get(0));
+                }else if (command.equals("ANGLE")) {
+                    players[PlayerID].getEntity().getComponent(PlayerControllerComponent.class).setAngle(Float.parseFloat(CommandArgs.get(0)));
                 }
             }
         }

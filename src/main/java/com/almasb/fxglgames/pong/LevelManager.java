@@ -15,6 +15,8 @@ public class LevelManager {
     Level[] Levels={new Level("Level1")};
     int CurrentLevel=-1;
 
+    public  boolean ShouldUpdate=false;
+
     Entity[] LevelEntities;
 
     public Level GetCurrent(){
@@ -32,7 +34,7 @@ public class LevelManager {
         }
     }
 
-    public void NextLevel(PlayerControllerComponent[] players, Entity[] enemy){
+    public void NextLevel(PlayerControllerComponent[] players, Enemy_Component[] enemy){
         DestroyLevel();
         CurrentLevel++;
 
@@ -52,10 +54,11 @@ public class LevelManager {
                 }
                 if (Levels[CurrentLevel].LevelData[y][x] == 5 && EnemysLeft != 0) {
                     EnemysLeft--;
-                    enemy[EnemysLeft].getComponent(PhysicsComponent.class).overwritePosition(new Point2D(x*TileSize,y*TileSize));
+                    enemy[EnemysLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(new Point2D(x*TileSize,y*TileSize));
                 }
             }
         }
+        ShouldUpdate=true;
     }
 
 }

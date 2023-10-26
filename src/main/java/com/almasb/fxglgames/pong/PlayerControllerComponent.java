@@ -8,13 +8,19 @@ import javafx.geometry.Point2D;
 
 public class PlayerControllerComponent extends Component {
 
+    public int PlayerID=-1;
     private static final double PLAYER_SPEED = 100;
 
     private static final float PLAYER_MAX_HEALTH = 100;
 
     protected PhysicsComponent physics;
 
+
+    private int Kills=0;
+
     public SpellComponent[] spellsPool;
+
+    boolean ShouldUpdate=false;
 
     SpellComponent GetSpell(){
 
@@ -26,16 +32,69 @@ public class PlayerControllerComponent extends Component {
         return  null;
     }
 
+
+
     private boolean up=false,down=false,left=false,right=false;
 
-    public float Health=PLAYER_MAX_HEALTH;
+    private float Health=PLAYER_MAX_HEALTH;
 
+    private float Angle=0;
+
+    public float getAngle() {
+        return Angle;
+    }
+
+    public void setAngle(float angle) {
+        if(Angle!=angle){
+            Angle = angle;
+            ShouldUpdate=true;
+        }
+    }
+
+    public boolean IsDead(){
+        return Health<=0;
+    }
+    public void DealDamage(float Amount){
+        Health-=Amount;
+
+        if(Health<=0){
+            physics.overwritePosition(new Point2D(-1000,-1000));
+        }
+        ShouldUpdate=true;
+    }
+
+    public void AddKillStat(){
+        Kills++;
+    }
+
+    public int getKills() {
+        return Kills;
+    }
+
+    public float GetHealth(){
+        return Health;
+    }
+
+
+    PlayerControllerComponent(){
+        Reset();
+    }
+
+    public void  Reset(){
+        Health=PLAYER_MAX_HEALTH;
+        ShouldUpdate=true;
+
+    }
 
     public void CastSpell(boolean FireType){
         var Spell=GetSpell();
 
         if(Spell!=null){
-            Spell.Shoot(entity.getPosition(), new Point2D(10,0));
+            var radians=(getAngle()-90)*( 3.14159265/180);
+            var x = Math.cos(radians);
+            var y = Math.sin(radians);
+
+            Spell.Shoot(PlayerID,entity.getPosition(), new Point2D(x,y),FireType);
         }
     }
 
@@ -81,8 +140,11 @@ public class PlayerControllerComponent extends Component {
             X=PLAYER_SPEED;
         }
 
-
         physics.setVelocityY(Y);
         physics.setVelocityX(X);
+
+        if(physics.isMoving()){
+            ShouldUpdate=true;
+        }
     }
 }

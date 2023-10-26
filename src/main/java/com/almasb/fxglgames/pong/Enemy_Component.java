@@ -4,6 +4,8 @@ import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.entity.component.Component;
 import com.almasb.fxgl.physics.PhysicsComponent;
 import com.almasb.fxgl.core.math.FXGLMath;
+import javafx.geometry.Point2D;
+
 public class Enemy_Component  extends Component {
 
     private static final double ENEMY_SPEED = 50;
@@ -14,7 +16,11 @@ public class Enemy_Component  extends Component {
 
     private static final float ENEMY_MAX_HEALTH = 100;
 
-    public float Health=ENEMY_MAX_HEALTH;
+    private float Health=ENEMY_MAX_HEALTH;
+
+    public  boolean Type_FireDemon=true;
+
+    public boolean ShouldUpdate=false;
 
     protected PhysicsComponent physics;
 
@@ -25,6 +31,33 @@ public class Enemy_Component  extends Component {
         Health=ENEMY_MAX_HEALTH;
     }
 
+    public void DealDamage(SpellComponent spell){
+        if(spell.isFireSpellType()!=Type_FireDemon){
+            Health-=25;
+            if(Health<=0){
+                physics.overwritePosition(new Point2D( -1000,-1000));
+                ShouldUpdate=true;
+                Players[spell.getShotBY()].AddKillStat();
+            }
+            ShouldUpdate=true;
+        }
+    }
+
+    public float GetHealth(){
+        return Health;
+    }
+
+
+    Enemy_Component(){
+        Reset();
+    }
+
+    public void  Reset(){
+        Health=ENEMY_MAX_HEALTH;
+        ShouldUpdate=true;
+
+    }
+
 
     double clamp(double value, int min, int max) {
         return Math.max(min, Math.min(max, value));
@@ -33,7 +66,6 @@ public class Enemy_Component  extends Component {
     @Override
     public void onUpdate(double tpf) {
         if(Health<=0){
-            entity.setPosition(-1000,-1000);
             return;
         }
 
@@ -60,13 +92,17 @@ public class Enemy_Component  extends Component {
             double Y = clamp((Target.getEntity().getY() - entity.getY()), -1, 1);
 
             if(InAttackRadius){
-                Target.Health-=ATTACK_DAMAGE;
+                Target.DealDamage(ATTACK_DAMAGE);
             }
 
             physics.setVelocityY(Y * ENEMY_SPEED);
             physics.setVelocityX(X * ENEMY_SPEED);
         }
 
+
+        if(physics.isMoving()){
+            ShouldUpdate=true;
+        }
 
     }
 }
