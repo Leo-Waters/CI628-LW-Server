@@ -13,4 +13,9 @@
     <Label translateX="10" translateY="70" fx:id="Player4" textFill="azure" />
 
 
+    <Label translateX="10" translateY="100" fx:id="TimeElapsed" textFill="azure" />
+    <Label translateX="10" translateY="130" fx:id="Sent" textFill="azure" />
+    <Label translateX="10" translateY="190" fx:id="Recived" textFill="azure" />
+
+
 </Pane>

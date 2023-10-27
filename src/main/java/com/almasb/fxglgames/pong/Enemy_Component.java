@@ -16,7 +16,7 @@ public class Enemy_Component  extends Component {
 
     private static final float ENEMY_MAX_HEALTH = 100;
 
-    private float Health=ENEMY_MAX_HEALTH;
+    private float Health=-100;
 
     public  boolean Type_FireDemon=true;
 
@@ -28,16 +28,18 @@ public class Enemy_Component  extends Component {
 
     public void  Setup(PlayerControllerComponent[] _Players){
         Players=_Players;
-        Health=ENEMY_MAX_HEALTH;
+
     }
 
     public void DealDamage(SpellComponent spell){
         if(spell.isFireSpellType()!=Type_FireDemon){
             Health-=25;
             if(Health<=0){
-                physics.overwritePosition(new Point2D( -1000,-1000));
-                ShouldUpdate=true;
+                physics.overwritePosition(new Point2D( -1000,-1500));
+                physics.setLinearVelocity(0,0);
+
                 Players[spell.getShotBY()].AddKillStat();
+                ShouldUpdate=true;
             }
             ShouldUpdate=true;
         }
@@ -48,14 +50,10 @@ public class Enemy_Component  extends Component {
     }
 
 
-    Enemy_Component(){
-        Reset();
-    }
 
-    public void  Reset(){
+    public void  Init(){
         Health=ENEMY_MAX_HEALTH;
         ShouldUpdate=true;
-
     }
 
 
@@ -66,6 +64,7 @@ public class Enemy_Component  extends Component {
     @Override
     public void onUpdate(double tpf) {
         if(Health<=0){
+
             return;
         }
 

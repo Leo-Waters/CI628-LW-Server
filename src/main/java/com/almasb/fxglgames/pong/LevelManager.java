@@ -55,6 +55,7 @@ public class LevelManager {
                 if (Levels[CurrentLevel].LevelData[y][x] == 5 && EnemysLeft != 0) {
                     EnemysLeft--;
                     enemy[EnemysLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(new Point2D(x*TileSize,y*TileSize));
+                    enemy[EnemysLeft].Init();
                 }
             }
         }

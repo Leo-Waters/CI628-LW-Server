@@ -172,6 +172,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
     @Override
     protected void onUpdate(double tpf) {
+
+        ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageWriterS.TotalBytesSent);
         if (!server.getConnections().isEmpty()) {
 
             if(LevelManager.ShouldUpdate){
@@ -353,6 +355,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
     static class MessageWriterS implements TCPMessageWriter<String> {
 
+        public static Integer TotalBytesSent=0;
         private OutputStream os;
         private PrintWriter out;
 
@@ -363,6 +366,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         @Override
         public void write(String s) throws Exception {
+            TotalBytesSent+=s.getBytes().length;//used to debug sent data
+            System.out.println("Sending :"+s);
             out.print(s.toCharArray());
             out.flush();
         }
@@ -372,6 +377,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         private BlockingQueue<String> messages = new ArrayBlockingQueue<>(50);
 
+        public  static Integer TotalBytesRead=0;
         private InputStreamReader in;
 
         MessageReaderS(InputStream is) {
@@ -386,7 +392,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
                     while ((len = in.read(buf)) > 0) {
                         var message = new String(Arrays.copyOf(buf, len));
-
+                        TotalBytesRead+=len;
                         System.out.println("Recv message: " + message);
 
                         messages.put(message);

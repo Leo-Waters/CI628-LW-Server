@@ -44,6 +44,12 @@ public class MainUIController implements UIController {
     private Label Player3;
     @FXML
     private Label Player4;
+    @FXML
+    private Label TimeElapsed;
+    @FXML
+    private Label Recived;
+    @FXML
+    private Label Sent;
 
     public void ShowPlayerPossessionState(int player, boolean Possessed){
         switch (player){
@@ -61,13 +67,24 @@ public class MainUIController implements UIController {
                 break;
         }
     }
-
+    double Time=0;
+    public void ShowServerPerformance(double tpf,int BytesRead,int BytesSent){
+        Time+=tpf;
+        TimeElapsed.setText("Time Elapsed: "+String.format("%.2f",Time)+"s");
+        Sent.setText("Bytes Sent: "+BytesSent+"\nAverage "+String.format("%.2f",(BytesSent)/Time)+"/s");
+        Recived.setText("Bytes Read: "+BytesRead+"\nAverage "+String.format("%.2f", BytesRead/Time)+"/s");
+    }
     @Override
     public void init() {
         Player1.setFont(FXGL.getUIFactory().newFont(18));
         Player2.setFont(FXGL.getUIFactory().newFont(18));
         Player3.setFont(FXGL.getUIFactory().newFont(18));
         Player4.setFont(FXGL.getUIFactory().newFont(18));
+
+        TimeElapsed.setFont(FXGL.getUIFactory().newFont(18));
+        Sent.setFont(FXGL.getUIFactory().newFont(18));
+        Recived.setFont(FXGL.getUIFactory().newFont(18));
+
     }
 
 }
