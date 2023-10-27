@@ -69,7 +69,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     }
 
     private PlayerControllerComponent[] players= new PlayerControllerComponent[4];
-    public Enemy_Component[] enemys= new Enemy_Component[20];
+    public Enemy_Component[] enemys= new Enemy_Component[40];
 
     //if true will force game stat update, used for when new clients join
     public boolean UpdateOveride=false;
@@ -83,10 +83,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
     @Override
     protected void initGameVars(Map<String, Object> vars) {
-        vars.put("player1Health", 100);
-        vars.put("player2Health", 100);
-        vars.put("player3Health", 100);
-        vars.put("player4Health", 100);
     }
 
     @Override
@@ -173,6 +169,23 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     @Override
     protected void onUpdate(double tpf) {
 
+        boolean PlayersAllDead=true;
+        for (int i = 0; i < players.length; i++) {
+            if(!players[i].IsDead()){
+                PlayersAllDead=false;
+                break;
+            }
+        }
+        if(PlayersAllDead){//restart game
+
+            //todo- add save for score if is best score yett
+
+            LevelManager.Reset(players,enemys);
+
+            UpdateOveride=true;//force game state update
+        }
+
+
         ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageWriterS.TotalBytesSent);
         if (!server.getConnections().isEmpty()) {
 
@@ -235,6 +248,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         }
 
         if(UpdateOveride){//update override was performed
+            System.out.println("Update Overide Preformed----------------");
             UpdateOveride=false;
         }
 
@@ -332,7 +346,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                 ArgDebugString.append(" No Args");
             }
 
-            System.out.println("Player:"+PlayerID+" sent "+"command: "+command+ArgDebugString);
+            System.out.println("Player:"+PlayerID+" sent "+"command: "+command+ArgDebugString+" INDATA:"+Data);
 
             if(command.equals("PlayerDisconnected")){
                 if(PlayerID!=-1){

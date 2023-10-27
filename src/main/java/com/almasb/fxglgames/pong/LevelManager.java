@@ -33,6 +33,17 @@ public class LevelManager {
             LevelEntities=null;
         }
     }
+    public void Reset(PlayerControllerComponent[] players, Enemy_Component[] enemy){
+        for (int p = 0; p < players.length; p++) {
+            players[p].Reset();
+        }
+        for (int e = 0; e < enemy.length; e++) {
+            enemy[e].physics.overwritePosition(new Point2D(-1000,-1500));
+        }
+        CurrentLevel=-1;
+        NextLevel(players,enemy);
+
+    }
 
     public void NextLevel(PlayerControllerComponent[] players, Enemy_Component[] enemy){
         DestroyLevel();
@@ -47,16 +58,21 @@ public class LevelManager {
             for (int y = 0; y < Levels[CurrentLevel].Height; y++) {
                 if (Levels[CurrentLevel].LevelData[y][x] == 1) {
                     LevelEntities[(y*Levels[CurrentLevel].Width)+x]=spawn("Wall", new SpawnData(x * TileSize, y * TileSize));
+                }else {
+                    var spawnpos=new Point2D((x*TileSize)+(TileSize/4),(y*TileSize)+(TileSize/4));
+                    if (Levels[CurrentLevel].LevelData[y][x] == 4 && PlayersLeft != 0) {
+                        PlayersLeft--;
+                        players[PlayersLeft].getEntity().setPosition(spawnpos);
+                        players[PlayersLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(spawnpos);
+                    }
+                    if (Levels[CurrentLevel].LevelData[y][x] == 5 && EnemysLeft != 0) {
+                        EnemysLeft--;
+                        enemy[EnemysLeft].getEntity().setPosition(spawnpos);
+                        enemy[EnemysLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(spawnpos);
+                        enemy[EnemysLeft].Init();
+                    }
                 }
-                if (Levels[CurrentLevel].LevelData[y][x] == 4 && PlayersLeft != 0) {
-                    PlayersLeft--;
-                    players[PlayersLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(new Point2D(x*TileSize,y*TileSize));
-                }
-                if (Levels[CurrentLevel].LevelData[y][x] == 5 && EnemysLeft != 0) {
-                    EnemysLeft--;
-                    enemy[EnemysLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(new Point2D(x*TileSize,y*TileSize));
-                    enemy[EnemysLeft].Init();
-                }
+
             }
         }
         ShouldUpdate=true;

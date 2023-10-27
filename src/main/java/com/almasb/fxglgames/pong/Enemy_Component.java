@@ -8,11 +8,11 @@ import javafx.geometry.Point2D;
 
 public class Enemy_Component  extends Component {
 
-    private static final double ENEMY_SPEED = 50;
+    private static final double ENEMY_SPEED = 100;
 
-    private static final double DETECTION_RADIUS = 250;
+    private static final double DETECTION_RADIUS = 400;
     private static final double ATTACK_RADIUS = 50;
-    private static final float ATTACK_DAMAGE = 1;
+    private static final float ATTACK_DAMAGE = 50;
 
     private static final float ENEMY_MAX_HEALTH = 100;
 
@@ -91,7 +91,7 @@ public class Enemy_Component  extends Component {
             double Y = clamp((Target.getEntity().getY() - entity.getY()), -1, 1);
 
             if(InAttackRadius){
-                Target.DealDamage(ATTACK_DAMAGE);
+                Target.DealDamage((float) (ATTACK_DAMAGE*tpf));
             }
 
             physics.setVelocityY(Y * ENEMY_SPEED);

@@ -40,6 +40,8 @@ public class PlayerControllerComponent extends Component {
 
     private float Angle=0;
 
+    private double LastPosCheck=0;
+
     public float getAngle() {
         return Angle;
     }
@@ -143,7 +145,10 @@ public class PlayerControllerComponent extends Component {
         physics.setVelocityY(Y);
         physics.setVelocityX(X);
 
-        if(physics.isMoving()){
+        double newPos= (entity.getPosition().getX()+entity.getY());
+
+        if(newPos!=LastPosCheck){
+            LastPosCheck=newPos;
             ShouldUpdate=true;
         }
     }
