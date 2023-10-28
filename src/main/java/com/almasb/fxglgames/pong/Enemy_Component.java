@@ -75,12 +75,14 @@ public class Enemy_Component  extends Component {
 
         boolean InAttackRadius=false;
         for (PlayerControllerComponent player : Players) {
-            var dist = entity.getPosition().distance(player.getEntity().getPosition());
-            if (dist < DETECTION_RADIUS && dist < ClosestPlayer) {
-                ClosestPlayer = dist;
-                Target = player;
-                if(dist<ATTACK_RADIUS){
-                    InAttackRadius=true;
+            if(!player.IsDead()) {
+                var dist = entity.getPosition().distance(player.getEntity().getPosition());
+                if (dist < DETECTION_RADIUS && dist < ClosestPlayer) {
+                    ClosestPlayer = dist;
+                    Target = player;
+                    if (dist < ATTACK_RADIUS) {
+                        InAttackRadius = true;
+                    }
                 }
             }
         }

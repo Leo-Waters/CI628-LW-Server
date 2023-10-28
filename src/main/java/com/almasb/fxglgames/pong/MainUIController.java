@@ -68,11 +68,11 @@ public class MainUIController implements UIController {
         }
     }
     double Time=0;
-    public void ShowServerPerformance(double tpf,int BytesRead,int BytesSent){
+    public void ShowServerPerformance(double tpf,int BytesRead,int CompresssedBytesRead,int BytesSent,int CompressedBytesSent){
         Time+=tpf;
         TimeElapsed.setText("Time Elapsed: "+String.format("%.2f",Time)+"s");
-        Sent.setText("Bytes Sent: "+BytesSent+"\nAverage "+String.format("%.2f",(BytesSent)/Time)+"/s");
-        Recived.setText("Bytes Read: "+BytesRead+"\nAverage "+String.format("%.2f", BytesRead/Time)+"/s");
+        Sent.setText("Bytes Sent: "+BytesSent+" Average "+String.format("%.2f",(BytesSent)/Time)+"/s"+"\nAfter compression, bytes Sent: "+CompressedBytesSent+"   Average: "+String.format("%.2f",(CompressedBytesSent)/Time)+"/s");
+        Recived.setText("Bytes Read: "+BytesRead+" Average "+String.format("%.2f", BytesRead/Time)+"/s"+"\nAfter compression, bytes Read: "+CompresssedBytesRead+"   Average: "+String.format("%.2f",(CompresssedBytesRead)/Time)+"/s");
     }
     @Override
     public void init() {

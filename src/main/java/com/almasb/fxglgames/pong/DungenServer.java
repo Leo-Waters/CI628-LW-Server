@@ -38,16 +38,15 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
@@ -186,7 +185,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         }
 
 
-        ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageWriterS.TotalBytesSent);
+        ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageReaderS.TotalBytesRead,MessageWriterS.TotalBytesSent,MessageWriterS.TotalBytesAfterCompression);
         if (!server.getConnections().isEmpty()) {
 
             if(LevelManager.ShouldUpdate){
@@ -220,25 +219,32 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     }
 
     void BroadCastPlayerUpdates(){
-
+        StringBuilder message= new StringBuilder();
         for(int i=0;i<players.length;i++)//send updates for each players data
         {
             if(players[i].ShouldUpdate||UpdateOveride){
-                var message = "PLAYER_DATA,"+i+"," + players[i].getEntity().getX() + "," + players[i].getEntity().getY()+","+(ConnectionIDs[i]?"ACTIVE" :"IDLE")+","+players[i].GetHealth()+","+players[i].getAngle()+","+players[i].getKills()+",|";
-                server.broadcast(message);
+                message.append("PLAYER_DATA,").append(i).append(",").append(players[i].getEntity().getX()).append(",").append(players[i].getEntity().getY()).append(",").append(ConnectionIDs[i] ? "ACTIVE" : "IDLE").append(",").append(players[i].GetHealth()).append(",").append(players[i].getAngle()).append(",").append(players[i].getKills()).append(",|");
                 players[i].ShouldUpdate=false;
             }
 
         }
+        if(!message.toString().isEmpty()){
+            server.broadcast(message.toString());
+            message = new StringBuilder();
+        }
 
         for(int i=0;i<enemys.length;i++)//send updates for each players data
         {
+
             if(enemys[i].ShouldUpdate||UpdateOveride){
-                var message = "ENEMY_DATA,"+i+"," + enemys[i].getEntity().getX() + "," + enemys[i].getEntity().getY()+","+enemys[i].GetHealth()+",|";
-                server.broadcast(message);
+                message.append("ENEMY_DATA,").append(i).append(",").append(enemys[i].getEntity().getX()).append(",").append(enemys[i].getEntity().getY()).append(",").append(enemys[i].GetHealth()).append(",|");
+
                 enemys[i].ShouldUpdate=false;
             }
 
+        }
+        if(!message.toString().isEmpty()){
+            server.broadcast(message.toString());
         }
 
         for (int s = 0; s < Spells.length; s++) {
@@ -290,7 +296,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     @Override
     public void onReceive(Connection<String> connection, String message) {
 
-        String[] Commands=message.split("\\|");
+
 
         int PlayerID=connection.getLocalSessionData().getInt("ID");
 
@@ -324,7 +330,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             }
 
         }
-
+        String[] Commands=message.split("\\|");
         for (int i = 0; i < Commands.length; i++) {
             var Data=Commands[i];
 
@@ -369,7 +375,9 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
     static class MessageWriterS implements TCPMessageWriter<String> {
 
+
         public static Integer TotalBytesSent=0;
+        public static Integer TotalBytesAfterCompression=0;
         private OutputStream os;
         private PrintWriter out;
 
@@ -382,7 +390,15 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         public void write(String s) throws Exception {
             TotalBytesSent+=s.getBytes().length;//used to debug sent data
             System.out.println("Sending :"+s);
-            out.print(s.toCharArray());
+
+            var compressed=ServerMessageHelpers.CompressString(s);
+            TotalBytesAfterCompression+=compressed.getBytes().length;
+
+            System.out.println("Non Comp :"+(s.getBytes()).length);
+            System.out.println(s);
+            System.out.println("Comp :"+compressed.getBytes().length);
+            System.out.println(compressed);
+            out.write(s);
             out.flush();
         }
     }
@@ -392,6 +408,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         private BlockingQueue<String> messages = new ArrayBlockingQueue<>(50);
 
         public  static Integer TotalBytesRead=0;
+        public static Integer TotalBytesAfterCompression=0;
         private InputStreamReader in;
 
         MessageReaderS(InputStream is) {
