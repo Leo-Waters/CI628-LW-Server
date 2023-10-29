@@ -398,6 +398,9 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             System.out.println(s);
             System.out.println("Comp :"+compressed.getBytes().length);
             System.out.println(compressed);
+            String decomp=ServerMessageHelpers.DecompressString(compressed);
+            System.out.println("De comp :"+decomp.getBytes().length);
+            System.out.println(decomp);
             out.write(s);
             out.flush();
         }

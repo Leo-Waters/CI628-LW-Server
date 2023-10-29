@@ -166,6 +166,11 @@ public class ServerMessageHelpers {
 
     }
 
+    //from stack overflow https://stackoverflow.com/a/19394939
+    public static boolean isInt(String str){
+        return (str.lastIndexOf("-") == 0 && !str.equals("-0")) ? str.substring(1).matches(
+                "\\d+") : str.matches("\\d+");
+    }
 
     public static String DecompressString(String str){
         StringBuilder Data=new StringBuilder();
@@ -175,29 +180,93 @@ public class ServerMessageHelpers {
         int Index=0;
         Map<String, String> Keys = new HashMap<String, String>();
 
+
+
         //-----------------------------------------------Identify Keys----------------
         for(ServerCommand cmd : Commands){
             if(cmd.Command.isEmpty()){
                 continue;
             }
             if(cmd.Command.charAt(0)=='*'){//found command Key
-                Keys.put("*"+Index,cmd.Command.substring(1));//add Command key
-                Index++;//Increase Index for next find
+                if(Keys.containsKey(cmd.Command)){//is key, replace with value
+                    cmd.Command=Keys.get(cmd.Command);
+                }else {//is value register with key so that future keys can retrieve
+                    cmd.Command=cmd.Command.substring(1);
+                    Keys.put("*"+Index,cmd.Command);//add Command key
+                    Index++;//Increase Index for next find
+                }
             }
-
+            List<String> ExpandedArgs = new ArrayList<>();
             for (int i = 0; i < cmd.Args.size(); i++) {
                 if(cmd.Args.get(i).isEmpty()){
                     continue;
                 }
                 if(cmd.Args.get(i).charAt(0)=='*'){//found command Key
-                    Keys.put("*"+Index,cmd.Args.get(i).substring(1));//add Command key
-                    Index++;//Increase Index for next find
+
+                    if(Keys.containsKey(cmd.Args.get(i))) {//is key, replace with value
+                        cmd.Args.set(i,Keys.get(cmd.Args.get(i)));
+                    }else {//is value register with key so that future keys can retrieve
+                        cmd.Args.set(i,cmd.Args.get(i).substring(1));
+                        Keys.put("*"+Index, cmd.Args.get(i));//add Command key
+                        Index++;//Increase Index for next find
+                    }
+                }
+                //expand repetitive args
+                if(cmd.Args.get(i).charAt(0)=='"'){
+
+                    StringBuilder value= new StringBuilder();
+                    StringBuilder Multiplier= new StringBuilder();
+
+                    boolean GotValue=false;
+                    boolean GettingMultiplier=false;
+                    for (int j = 1; j < cmd.Args.get(i).length(); j++) {
+                        if(cmd.Args.get(i).charAt(j)=='"'){//reached end of value
+                            GotValue=true;//has value
+                        }else {
+                            if(!GotValue){//if hasnt got value
+                                value.append(cmd.Args.get(i).charAt(j));//add current char to value
+                            }
+                            else if(GotValue&&cmd.Args.get(i).charAt(j)=='x'){//gettingMultiplier
+                                GettingMultiplier=true;
+                            }
+                            else if(GettingMultiplier){
+                                Multiplier.append(cmd.Args.get(i).charAt(j));//get multiplier
+                            }
+                        }
+                    }
+
+                    int Elem_Multiplier=Integer.parseInt(Multiplier.toString());//convert multiplier to int
+
+                    for (int e = 0; e < Elem_Multiplier; e++) {//add value to args by multiplier
+                        ExpandedArgs.add(value.toString());
+                    }
+
+                }else {
+                    ExpandedArgs.add(cmd.Args.get(i));
+                }
+
+            }
+            cmd.Args=ExpandedArgs;
+
+
+            //convert decompressed data into string form again
+            Data.append(cmd.Command);//add command name
+
+            if(!cmd.Args.isEmpty()){//has args
+                Data.append(",");
+                for (String shrunkArg : cmd.Args) {
+                    Data.append(shrunkArg);//add arg to string
+                    Data.append(",");
                 }
             }
+            //signifies end of command
+            Data.append("|");
         }
         //------------------------------------------------------------------------------------------------
 
         //Convert Data back to full
+
+
 
         return  Data.toString();
     }
