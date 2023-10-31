@@ -166,12 +166,6 @@ public class ServerMessageHelpers {
 
     }
 
-    //from stack overflow https://stackoverflow.com/a/19394939
-    public static boolean isInt(String str){
-        return (str.lastIndexOf("-") == 0 && !str.equals("-0")) ? str.substring(1).matches(
-                "\\d+") : str.matches("\\d+");
-    }
-
     public static String DecompressString(String str){
         StringBuilder Data=new StringBuilder();
 
@@ -182,7 +176,7 @@ public class ServerMessageHelpers {
 
 
 
-        //-----------------------------------------------Identify Keys----------------
+        //-----------------------------------------------Identify keys and replace----------------
         for(ServerCommand cmd : Commands){
             if(cmd.Command.isEmpty()){
                 continue;

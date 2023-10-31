@@ -38,6 +38,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
 
+import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,18 +113,20 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
             //send current level file----------------------------------------------------------------------
             Level level=LevelManager.GetCurrent();
-            connection.send("LEVELUPDATE,"+(LevelManager.CurrentLevel+1)+","+level.Width+","+level.Height+",|");
+            StringBuilder levelUpdate= new StringBuilder();
+            levelUpdate.append("LEVELUPDATE,").append(LevelManager.CurrentLevel + 1).append(",").append(level.Width).append(",").append(level.Height).append(",|");
             for (int y=0; y<level.Height; y++){
-                StringBuilder RowUpdate= new StringBuilder("LEVELDATA,"+y);
+                levelUpdate.append("LEVELDATA,").append(y);
 
                 for (int x=0; x<level.Width; x++){
-                    RowUpdate.append(",").append(level.LevelData[y][x]);
+                    levelUpdate.append(",").append(level.LevelData[y][x]);
                 }
-                RowUpdate.append(",|");
-                connection.send(RowUpdate.toString());
+                levelUpdate.append(",|");
+
 
             }
-            connection.send("LEVELUPDATECOMPLETE|");
+            levelUpdate.append("LEVELUPDATECOMPLETE|");
+            connection.send(levelUpdate.toString());
 
             connection.addMessageHandlerFX(this);
         });
@@ -204,18 +207,20 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
     void BroadCastLevelUpdate(){
         Level level=LevelManager.GetCurrent();
-        server.broadcast("LEVELUPDATE,"+(LevelManager.CurrentLevel+1)+","+level.Width+","+level.Height+",|");
+        StringBuilder levelUpdate= new StringBuilder();
+        levelUpdate.append("LEVELUPDATE,").append(LevelManager.CurrentLevel + 1).append(",").append(level.Width).append(",").append(level.Height).append(",|");
         for (int y=0; y<level.Height; y++){
-            StringBuilder RowUpdate= new StringBuilder("LEVELDATA,"+y);
+            levelUpdate.append("LEVELDATA,").append(y);
 
             for (int x=0; x<level.Width; x++){
-                RowUpdate.append(",").append(level.LevelData[y][x]);
+                levelUpdate.append(",").append(level.LevelData[y][x]);
             }
-            RowUpdate.append(",|");
-            server.broadcast(RowUpdate.toString());
+            levelUpdate.append(",|");
+
 
         }
-        server.broadcast("LEVELUPDATECOMPLETE|");
+        levelUpdate.append("LEVELUPDATECOMPLETE|");
+        server.broadcast(levelUpdate.toString());
     }
 
     void BroadCastPlayerUpdates(){
@@ -401,7 +406,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             String decomp=ServerMessageHelpers.DecompressString(compressed);
             System.out.println("De comp :"+decomp.getBytes().length);
             System.out.println(decomp);
-            out.write(s);
+            out.write(compressed+"%");
             out.flush();
         }
     }
@@ -411,7 +416,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         private BlockingQueue<String> messages = new ArrayBlockingQueue<>(50);
 
         public  static Integer TotalBytesRead=0;
-        public static Integer TotalBytesAfterCompression=0;
+        public static Integer TotalBytesAfterDecompression=0;
         private InputStreamReader in;
 
         MessageReaderS(InputStream is) {
@@ -428,8 +433,9 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                         var message = new String(Arrays.copyOf(buf, len));
                         TotalBytesRead+=len;
                         System.out.println("Recv message: " + message);
-
-                        messages.put(message);
+                        var decompressed=ServerMessageHelpers.DecompressString(message);
+                        System.out.println("Recv message Decomp: " + decompressed);
+                        messages.put(decompressed);
                     }
 
                 } catch (Exception e) {
