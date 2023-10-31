@@ -168,8 +168,21 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         }
     }
 
+    boolean ShouldUpdate=false;
+    private static final double UpdateDelay = 0.05;
+    double TimeTillUpdate=0;
+
     @Override
     protected void onUpdate(double tpf) {
+
+        if(!ShouldUpdate){
+            TimeTillUpdate-=tpf;
+            if(TimeTillUpdate<=0){
+                ShouldUpdate=true;
+                TimeTillUpdate=UpdateDelay;
+            }
+        }
+
 
         boolean PlayersAllDead=true;
         for (int i = 0; i < players.length; i++) {
@@ -189,7 +202,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
 
         ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageReaderS.TotalBytesRead,MessageWriterS.TotalBytesSent,MessageWriterS.TotalBytesAfterCompression);
-        if (!server.getConnections().isEmpty()) {
+        if (!server.getConnections().isEmpty()&&ShouldUpdate) {
+            ShouldUpdate=false;
 
             if(LevelManager.ShouldUpdate){
                 BroadCastLevelUpdate();
@@ -233,10 +247,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             }
 
         }
-        if(!message.toString().isEmpty()){
-            server.broadcast(message.toString());
-            message = new StringBuilder();
-        }
+
 
         for(int i=0;i<enemys.length;i++)//send updates for each players data
         {
@@ -248,14 +259,16 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             }
 
         }
-        if(!message.toString().isEmpty()){
-            server.broadcast(message.toString());
-        }
 
         for (int s = 0; s < Spells.length; s++) {
             if(Spells[s].HasServerUpdate()){//does the spell have an update
-                server.broadcast(Spells[s].GetServerUpdate(s));//send the update to clients
+                message.append(Spells[s].GetServerUpdate(s));//send the update to clients
             }
+        }
+
+        if(!message.toString().isEmpty()){
+            server.broadcast(message.toString());
+
         }
 
         if(UpdateOveride){//update override was performed
