@@ -29,16 +29,12 @@ package com.almasb.fxglgames.pong;
 import com.almasb.fxgl.app.ApplicationMode;
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
-import com.almasb.fxgl.core.collection.Array;
-import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.entity.SpawnData;
 import com.almasb.fxgl.net.*;
 import com.almasb.fxgl.ui.UI;
-import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
 
-import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
@@ -77,7 +72,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     public SpellComponent[] Spells=new SpellComponent[20];
 
     public  LevelManager LevelManager= new LevelManager();
-    private boolean[] ConnectionIDs={false,false,false,false};
     private Server<String> server;
 
 
@@ -100,8 +94,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             boolean AssignedAPlayerID=false;//player hasn't been assigned an ID
             for (int i = 0; i < 4; i++) {
 
-                if(!ConnectionIDs[i]){//if Connection ID == false
-                    AssignedAPlayerID=ConnectionIDs[i]=true;// has assign Player ID
+                if(!players[i].Connected){//if Connection ID == false
+                    AssignedAPlayerID=players[i].Connected=true;// has assign Player ID
                     connection.getLocalSessionData().setValue("ID",i);//set Connection ID
                     connection.send("ID,"+i+",|");//send ID to Client
                     break;
@@ -163,14 +157,17 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         {
             //add possesion detection coe
             //players[i].getComponent()
-            boolean isPossed= ConnectionIDs[i];
+            boolean isPossed= players[i].Connected;
             ((MainUIController)ui.getController()).ShowPlayerPossessionState(i,isPossed);
         }
     }
 
     boolean ShouldUpdate=false;
-    private static final double UpdateDelay = 0.05;
+    private static final double UpdateDelay = 0.01;
     double TimeTillUpdate=0;
+
+    //0 = player 1 = enemy 2= spells 3;
+    int UpdateType=0;
 
     @Override
     protected void onUpdate(double tpf) {
@@ -198,10 +195,11 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             LevelManager.Reset(players,enemys);
 
             UpdateOveride=true;//force game state update
+            UpdateType=0;
         }
 
 
-        ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageReaderS.TotalBytesRead,MessageWriterS.TotalBytesSent,MessageWriterS.TotalBytesAfterCompression);
+        ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageReaderS.TotalBytesAfterDecompression,MessageWriterS.TotalBytesSent,MessageWriterS.TotalBytesAfterCompression);
         if (!server.getConnections().isEmpty()&&ShouldUpdate) {
             ShouldUpdate=false;
 
@@ -210,7 +208,22 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                 LevelManager.ShouldUpdate=false;
             }
             UpdateUI();
-            BroadCastPlayerUpdates();
+
+            switch (UpdateType){
+                case 0:
+                    BroadCastPlayerUpdates();
+                    break;
+                case 1:
+                    BroadCastEnemyUpdates();
+                    break;
+                case 2:
+                    BroadCastSpellUpdates();
+                    break;
+            }
+            UpdateType++;
+            if(UpdateType==3){
+                UpdateType=0;
+            }
         }else{
             //no players connected, level file will be sent individualy as they join to save repeating the message
             if(LevelManager.ShouldUpdate) {
@@ -241,14 +254,21 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         StringBuilder message= new StringBuilder();
         for(int i=0;i<players.length;i++)//send updates for each players data
         {
-            if(players[i].ShouldUpdate||UpdateOveride){
-                message.append("PLAYER_DATA,").append(i).append(",").append(players[i].getEntity().getX()).append(",").append(players[i].getEntity().getY()).append(",").append(ConnectionIDs[i] ? "ACTIVE" : "IDLE").append(",").append(players[i].GetHealth()).append(",").append(players[i].getAngle()).append(",").append(players[i].getKills()).append(",|");
-                players[i].ShouldUpdate=false;
+            if(players[i].ShouldUpdate()||UpdateOveride){
+                message.append(players[i].GetUpdateString());
+
             }
 
         }
+        //send data to server
+        if(!message.toString().isEmpty()){
+            server.broadcast(message.toString());
+        }
 
+    }
 
+    void BroadCastEnemyUpdates(){
+        StringBuilder message= new StringBuilder();
         for(int i=0;i<enemys.length;i++)//send updates for each players data
         {
 
@@ -259,23 +279,31 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             }
 
         }
+        //send data to server
+        if(!message.toString().isEmpty()){
+            server.broadcast(message.toString());
+        }
 
+    }
+
+    void BroadCastSpellUpdates(){
+        StringBuilder message= new StringBuilder();
         for (int s = 0; s < Spells.length; s++) {
             if(Spells[s].HasServerUpdate()){//does the spell have an update
                 message.append(Spells[s].GetServerUpdate(s));//send the update to clients
             }
         }
-
+        //send data to server
         if(!message.toString().isEmpty()){
             server.broadcast(message.toString());
 
         }
 
+
         if(UpdateOveride){//update override was performed
             System.out.println("Update Overide Preformed----------------");
             UpdateOveride=false;
         }
-
     }
 
 
@@ -321,8 +349,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         if(PlayerID==-1){//assign and ID to a spectator
             for (int i = 0; i < 4; i++) {
-                if(!ConnectionIDs[i]){
-                    ConnectionIDs[i]=true;
+                if(!players[i].Connected){
+                    players[i].Connected=true;
                     connection.getLocalSessionData().setValue("ID",i);
                     connection.send("ID,"+i+",|");
                     break;
@@ -334,10 +362,10 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         if(PlayerID!=-1&&players[PlayerID].IsDead()){//assign a new ID to a dead player
             int NewID=-1;
             for (int i = 0; i < 4; i++) {
-                if(!ConnectionIDs[i]&& !players[i].IsDead()){
+                if(!players[i].Connected&& !players[i].IsDead()){
                     NewID=i;
-                    ConnectionIDs[PlayerID]=false;
-                    ConnectionIDs[i]=true;
+                    players[PlayerID].Connected=false;
+                    players[i].Connected=true;
                     connection.getLocalSessionData().setValue("ID",i);
                     connection.send("ID,"+i+",|");
                     break;
@@ -374,12 +402,13 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
             if(command.equals("PlayerDisconnected")){
                 if(PlayerID!=-1){
-                    ConnectionIDs[PlayerID]=false;
+                    players[PlayerID].Connected=false;
                 }
 
             }
             else if(command.equals("GAMESTATE")){//player is requesting an update of the game state to sync
                 UpdateOveride=true;
+                UpdateType=0;
             }
             else if(PlayerID!=-1) {
                 if (command.equals("KEY")) {
@@ -406,19 +435,19 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         @Override
         public void write(String s) throws Exception {
-            TotalBytesSent+=s.getBytes().length;//used to debug sent data
+            TotalBytesSent+=s.length();//used to debug sent data
             System.out.println("Sending :"+s);
 
             var compressed=ServerMessageHelpers.CompressString(s);
-            TotalBytesAfterCompression+=compressed.getBytes().length;
+            TotalBytesAfterCompression+=compressed.length();
 
-            System.out.println("Non Comp :"+(s.getBytes()).length);
-            System.out.println(s);
-            System.out.println("Comp :"+compressed.getBytes().length);
-            System.out.println(compressed);
-            String decomp=ServerMessageHelpers.DecompressString(compressed);
-            System.out.println("De comp :"+decomp.getBytes().length);
-            System.out.println(decomp);
+            //System.out.println("Non Comp :"+(s.getBytes()).length);
+            //System.out.println(s);
+            //System.out.println("Comp :"+compressed.getBytes().length);
+            //System.out.println(compressed);
+            //String decomp=ServerMessageHelpers.DecompressString(compressed);
+            //System.out.println("De comp :"+decomp.getBytes().length);
+            //System.out.println(decomp);
             out.write(compressed+"%");
             out.flush();
         }
@@ -434,6 +463,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         MessageReaderS(InputStream is) {
             in =  new InputStreamReader(is);
+            AtomicReference<StringBuilder> CurrentMessage= new AtomicReference<>(new StringBuilder());
 
             var t = new Thread(() -> {
                 try {
@@ -443,12 +473,21 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                     int len;
 
                     while ((len = in.read(buf)) > 0) {
-                        var message = new String(Arrays.copyOf(buf, len));
+                        //READ MESSAGE UNTIL REACH %, THEN DECOMPRESS AND ADD TO MESSAGE QUE
                         TotalBytesRead+=len;
-                        System.out.println("Recv message: " + message);
-                        var decompressed=ServerMessageHelpers.DecompressString(message);
-                        System.out.println("Recv message Decomp: " + decompressed);
-                        messages.put(decompressed);
+                        for (int i = 0; i < len; i++) {
+                            if(buf[i]=='%') {//end of message
+                                var decompressed=ServerMessageHelpers.DecompressString(CurrentMessage.toString());
+                                TotalBytesAfterDecompression+=decompressed.length();
+                                System.out.println("Recv message: " + decompressed);
+                                messages.put(decompressed);
+                                CurrentMessage.set(new StringBuilder());
+                            }else {//add char to message
+                                CurrentMessage.get().append(buf[i]);
+                            }
+
+                        }
+
                     }
 
                 } catch (Exception e) {

@@ -8,6 +8,7 @@ import javafx.geometry.Point2D;
 
 public class PlayerControllerComponent extends Component {
 
+    public boolean Connected=false;
     public int PlayerID=-1;
     private static final double PLAYER_SPEED = 100;
 
@@ -20,7 +21,31 @@ public class PlayerControllerComponent extends Component {
 
     public SpellComponent[] spellsPool;
 
-    boolean ShouldUpdate=false;
+    //health, kills ect
+    private boolean StatsChanged=false;
+
+    //position Changed x y angle
+    private boolean PosChanged=false;
+    public boolean ShouldUpdate(){
+        return StatsChanged||PosChanged;
+    }
+
+    public String GetUpdateString(){
+        if(!ShouldUpdate()||(StatsChanged&&PosChanged)){//overide or all
+            StatsChanged=false;
+            PosChanged=false;
+            return "PLAYER_DATA,"+PlayerID+","+getEntity().getX()+","+getEntity().getY()+","+(Connected ? "ACTIVE" : "IDLE")+","+GetHealth()+","+getAngle()+","+getKills()+",|";
+        }else {
+            if(StatsChanged){
+                StatsChanged=false;
+                return "PLAYER_STAT,"+PlayerID+","+(Connected ? "ACTIVE" : "IDLE")+","+GetHealth()+","+getKills()+",|";
+            }else if(PosChanged){//pos changed
+                PosChanged=false;
+                return "PLAYER_POS,"+PlayerID+","+getEntity().getX()+","+getEntity().getY()+","+getAngle()+",|";
+            }
+        }
+        return "UpdateErrorOnPlayerData";
+    }
 
     SpellComponent GetSpell(){
 
@@ -49,7 +74,7 @@ public class PlayerControllerComponent extends Component {
     public void setAngle(float angle) {
         if(Angle!=angle){
             Angle = angle;
-            ShouldUpdate=true;
+            PosChanged=true;
         }
     }
 
@@ -60,9 +85,13 @@ public class PlayerControllerComponent extends Component {
         Health-=Amount;
 
         if(Health<=0){
+            up=false;
+            down=false;
+            left=false;
+            right=false;
             physics.overwritePosition(new Point2D(-1000,-1000));
         }
-        ShouldUpdate=true;
+        StatsChanged=true;
     }
 
     public void AddKillStat(){
@@ -84,8 +113,8 @@ public class PlayerControllerComponent extends Component {
 
     public void  Reset(){
         Health=PLAYER_MAX_HEALTH;
-        ShouldUpdate=true;
-
+        StatsChanged=true;
+        PosChanged=true;
     }
 
     public void CastSpell(boolean FireType){
@@ -149,7 +178,7 @@ public class PlayerControllerComponent extends Component {
 
         if(newPos!=LastPosCheck){
             LastPosCheck=newPos;
-            ShouldUpdate=true;
+            PosChanged=true;
         }
     }
 }

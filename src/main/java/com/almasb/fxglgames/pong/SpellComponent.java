@@ -7,7 +7,7 @@ import javafx.geometry.Point2D;
 
 public class SpellComponent  extends Component {
 
-    private static final double SPELL_SPEED = 5;
+    private static final double SPELL_SPEED = 150;
     private static final float RECYCLETIME = 5;
     public boolean Active=false;
     private float TimeLeft;
@@ -58,7 +58,7 @@ public class SpellComponent  extends Component {
             if(TimeLeft>0){
                 TimeLeft-=tpf;
             }
-            entity.translate(Velocity.getX(),Velocity.getY());
+            entity.translate(Velocity.getX()*tpf,Velocity.getY()*tpf);
             if(TimeLeft<0){
                 ShouldUpdate=true;
                 Active=false;
