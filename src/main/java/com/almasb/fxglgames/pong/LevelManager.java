@@ -6,13 +6,15 @@ import com.almasb.fxgl.physics.PhysicsComponent;
 import javafx.geometry.Point2D;
 
 
+import java.awt.*;
+
 import static com.almasb.fxgl.dsl.FXGL.spawn;
 
 public class LevelManager {
 
     public static final int TileSize  = 80;
 
-    Level[] Levels={new Level("Level1")};
+    Level[] Levels={new Level("Level1"),new Level("Level2")};
     int CurrentLevel=-1;
 
     public  boolean ShouldUpdate=false;
@@ -22,7 +24,16 @@ public class LevelManager {
     public Level GetCurrent(){
         return Levels[CurrentLevel];
     }
-
+    Point2D HatchPos;
+    public boolean HatchCheck(PlayerControllerComponent[] players){
+        for (PlayerControllerComponent player : players) {
+            var dist = player.getEntity().getPosition().distance(HatchPos);
+            if (dist < 20 ) {//player is at hatch
+                return true;
+            }
+        }
+       return false;
+    }
     private void DestroyLevel(){
         if(LevelEntities!=null){
             for (var ent: LevelEntities){
@@ -48,7 +59,9 @@ public class LevelManager {
     public void NextLevel(PlayerControllerComponent[] players, Enemy_Component[] enemy){
         DestroyLevel();
         CurrentLevel++;
-
+        if(CurrentLevel==Levels.length){//ensure a level is always loaded, loop player back to begining
+            CurrentLevel=0;
+        }
 
         LevelEntities= new Entity[Levels[CurrentLevel].Width*Levels[CurrentLevel].Height];
 
@@ -57,8 +70,27 @@ public class LevelManager {
         for (int x = 0; x < Levels[CurrentLevel].Width; x++) {
             for (int y = 0; y < Levels[CurrentLevel].Height; y++) {
                 if (Levels[CurrentLevel].LevelData[y][x] == 1) {
-                    LevelEntities[(y*Levels[CurrentLevel].Width)+x]=spawn("Wall", new SpawnData(x * TileSize, y * TileSize));
-                }else {
+                    boolean WallNeeded=false;
+                    //calculate if the wall is needed
+                    if (x==0||x==Levels[CurrentLevel].Width-1||y==0||y==Levels[CurrentLevel].Height-1){//borders always needed
+                        WallNeeded=true;
+                    }else {
+                        //check neighbours
+                        if(Levels[CurrentLevel].LevelData[y][x-1]!=1||Levels[CurrentLevel].LevelData[y][x+1]!=1||
+                                Levels[CurrentLevel].LevelData[y-1][x]!=1||Levels[CurrentLevel].LevelData[y+1][x]!=1){
+                            WallNeeded=true;
+                        }
+                    }
+
+
+                    if(WallNeeded) {
+                        LevelEntities[(y * Levels[CurrentLevel].Width) + x] = spawn("Wall", new SpawnData(x * TileSize, y * TileSize));
+                    }
+                }//end of level hatch------------------
+                else if (Levels[CurrentLevel].LevelData[y][x] == 6) {
+                    HatchPos= new Point2D(x * TileSize, y * TileSize);
+                }
+                else {//entity checks-------------------------------------------------------------------
                     var spawnpos=new Point2D((x*TileSize)+(TileSize/4),(y*TileSize)+(TileSize/4));
                     if (Levels[CurrentLevel].LevelData[y][x] == 4 && PlayersLeft != 0) {
                         PlayersLeft--;

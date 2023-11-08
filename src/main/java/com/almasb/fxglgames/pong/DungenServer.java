@@ -86,7 +86,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         server = getNetService().newTCPServer(55555, new ServerConfig<>(String.class));
 
-
+        ScoreSystem.LoadHighScore();
 
         server.setOnConnected(connection -> {//called when client connects
             System.out.println("Player Connected!");
@@ -121,7 +121,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             }
             levelUpdate.append("LEVELUPDATECOMPLETE|");
             connection.send(levelUpdate.toString());
-
+            connection.send("HIGHSCORE,"+ScoreSystem.HighLevel+","+ScoreSystem.HighKills+",|");
             connection.addMessageHandlerFX(this);
         });
 
@@ -191,9 +191,22 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         if(PlayersAllDead){//restart game
 
             //todo- add save for score if is best score yett
+            int combinedkills=0;
 
+            for (int i = 0; i < players.length; i++) {
+                combinedkills+=players[i].getKills();
+            }
+
+            ScoreSystem.SaveNewHighScore(LevelManager.CurrentLevel+1,combinedkills);
+            server.broadcast("HIGHSCORE,"+ScoreSystem.HighLevel+","+ScoreSystem.HighKills+",|");
             LevelManager.Reset(players,enemys);
 
+
+
+            UpdateOveride=true;//force game state update
+            UpdateType=0;
+        }else if(LevelManager.HatchCheck(players)){//player at hatch load next level
+            LevelManager.NextLevel(players,enemys);
             UpdateOveride=true;//force game state update
             UpdateType=0;
         }
@@ -208,7 +221,9 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                 LevelManager.ShouldUpdate=false;
             }
             UpdateUI();
-
+            BroadCastPlayerUpdates();
+            BroadCastEnemyUpdates();
+            BroadCastSpellUpdates();
             switch (UpdateType){
                 case 0:
                     BroadCastPlayerUpdates();
@@ -273,7 +288,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         {
 
             if(enemys[i].ShouldUpdate||UpdateOveride){
-                message.append("ENEMY_DATA,").append(i).append(",").append(enemys[i].getEntity().getX()).append(",").append(enemys[i].getEntity().getY()).append(",").append(enemys[i].GetHealth()).append(",|");
+                message.append("ENEMY_DATA,").append(i).append(",").append(enemys[i].getEntity().getX()).append(",").append(enemys[i].getEntity().getY()).append(",").append(enemys[i].GetHealth()).append(",").append(enemys[i].Type_FireDemon).append(",|");
 
                 enemys[i].ShouldUpdate=false;
             }

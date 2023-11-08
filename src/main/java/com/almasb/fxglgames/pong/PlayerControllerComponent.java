@@ -113,6 +113,7 @@ public class PlayerControllerComponent extends Component {
 
     public void  Reset(){
         Health=PLAYER_MAX_HEALTH;
+        Kills=0;
         StatsChanged=true;
         PosChanged=true;
     }

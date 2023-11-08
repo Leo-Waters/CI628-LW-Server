@@ -45,6 +45,8 @@ import javafx.scene.effect.BlendMode;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
+import java.util.Random;
+
 import static com.almasb.fxgl.dsl.FXGL.*;
 
 /**
@@ -89,12 +91,27 @@ public class DungenFactory implements EntityFactory {
         PhysicsComponent physics = new PhysicsComponent();
         physics.setBodyType(BodyType.DYNAMIC);
 
-        return entityBuilder(data)
-                .viewWithBBox(new Rectangle(40, 40, Color.RED))
-                .with(new CollidableComponent(true))
-                .with(physics)
-                .with(new Enemy_Component())
-                .build();
+        Random random = new Random();
+        boolean FireDemon = random.nextInt(2) == 0;
+        var enmeycomp=new Enemy_Component();
+        enmeycomp.Type_FireDemon=FireDemon;
+
+        if(FireDemon){
+            return entityBuilder(data)
+                    .viewWithBBox(new Rectangle(40, 40, Color.RED))
+                    .with(new CollidableComponent(true))
+                    .with(physics)
+                    .with(enmeycomp)
+                    .build();
+        }else {
+            return entityBuilder(data)
+                    .viewWithBBox(new Rectangle(40, 40, Color.BLUE))
+                    .with(new CollidableComponent(true))
+                    .with(physics)
+                    .with(enmeycomp)
+                    .build();
+        }
+
     }
 
 }

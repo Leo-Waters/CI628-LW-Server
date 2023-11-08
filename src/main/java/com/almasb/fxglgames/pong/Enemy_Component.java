@@ -8,7 +8,7 @@ import javafx.geometry.Point2D;
 
 public class Enemy_Component  extends Component {
 
-    private static final double ENEMY_SPEED = 100;
+    private static final double ENEMY_SPEED = 60;
 
     private static final double DETECTION_RADIUS = 400;
     private static final double ATTACK_RADIUS = 50;
@@ -21,6 +21,7 @@ public class Enemy_Component  extends Component {
     public  boolean Type_FireDemon=true;
 
     public boolean ShouldUpdate=false;
+    double LastPosCheck;
 
     protected PhysicsComponent physics;
 
@@ -101,9 +102,13 @@ public class Enemy_Component  extends Component {
         }
 
 
-        if(physics.isMoving()){
+        double newPos= (entity.getPosition().getX()+entity.getY());
+
+        if(newPos!=LastPosCheck){
+            LastPosCheck=newPos;
             ShouldUpdate=true;
         }
+
 
     }
 }
