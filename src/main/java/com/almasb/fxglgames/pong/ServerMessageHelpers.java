@@ -55,7 +55,7 @@ public class ServerMessageHelpers {
             if(!cmd.Args.isEmpty()) {//does the command have arguments
 
                 String LastArg = cmd.Args.get(0);//first argument
-                int Count = 1;//how many of thes arguments have appeared sequncialy 1,1,1,1,
+                int Count = 1;//how many of these arguments have appeared sequentially 1,1,1,1,
                 for (int i = 1; i < cmd.Args.size(); i++) {
 
                     //is this the same as the last arg

@@ -91,13 +91,14 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         server.setOnConnected(connection -> {//called when client connects
             System.out.println("Player Connected!");
 
+            String IDMess="";
             boolean AssignedAPlayerID=false;//player hasn't been assigned an ID
             for (int i = 0; i < 4; i++) {
 
                 if(!players[i].Connected){//if Connection ID == false
                     AssignedAPlayerID=players[i].Connected=true;// has assign Player ID
                     connection.getLocalSessionData().setValue("ID",i);//set Connection ID
-                    connection.send("ID,"+i+",|");//send ID to Client
+                    IDMess="ID,"+i+",|";//send ID to Client
                     break;
                 }
             }
@@ -106,22 +107,8 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             }
 
             //send current level file----------------------------------------------------------------------
-            Level level=LevelManager.GetCurrent();
-            StringBuilder levelUpdate= new StringBuilder();
-            levelUpdate.append("LEVELUPDATE,").append(LevelManager.CurrentLevel + 1).append(",").append(level.Width).append(",").append(level.Height).append(",|");
-            for (int y=0; y<level.Height; y++){
-                levelUpdate.append("LEVELDATA,").append(y);
-
-                for (int x=0; x<level.Width; x++){
-                    levelUpdate.append(",").append(level.LevelData[y][x]);
-                }
-                levelUpdate.append(",|");
-
-
-            }
-            levelUpdate.append("LEVELUPDATECOMPLETE|");
-            connection.send(levelUpdate.toString());
-            connection.send("HIGHSCORE,"+ScoreSystem.HighLevel+","+ScoreSystem.HighKills+",|");
+            String HighScoreMess="HIGHSCORE,"+ScoreSystem.HighLevel+","+ScoreSystem.HighKills+",|";
+            connection.send(IDMess+GetLevelDataAsString()+HighScoreMess);
             connection.addMessageHandlerFX(this);
         });
 
@@ -135,6 +122,25 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         var t = new Thread(server.startTask()::run);
         t.setDaemon(true);
         t.start();
+    }
+
+    private String GetLevelDataAsString() {
+        Level level=LevelManager.GetCurrent();
+        StringBuilder levelUpdate= new StringBuilder();
+        levelUpdate.append("LEVELUPDATE,").append(LevelManager.CurrentLevel + 1).append(",").append(level.Width).append(",").append(level.Height).append(",|");
+        for (int y=0; y<level.Height; y++){
+            levelUpdate.append("LEVELDATA,").append(y);
+
+            for (int x=0; x<level.Width; x++){
+                levelUpdate.append(",").append(level.LevelData[y][x]);
+            }
+            levelUpdate.append(",|");
+
+
+        }
+        levelUpdate.append("LEVELUPDATECOMPLETE|");
+
+        return  levelUpdate.toString();
     }
 
     @Override
@@ -163,11 +169,9 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     }
 
     boolean ShouldUpdate=false;
-    private static final double UpdateDelay = 0.01;
+    private static final double UpdateDelay = 0.2;
     double TimeTillUpdate=0;
 
-    //0 = player 1 = enemy 2= spells 3;
-    int UpdateType=0;
 
     @Override
     protected void onUpdate(double tpf) {
@@ -179,7 +183,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                 TimeTillUpdate=UpdateDelay;
             }
         }
-
+        BroadCastSpellUpdates();
 
         boolean PlayersAllDead=true;
         for (int i = 0; i < players.length; i++) {
@@ -190,7 +194,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         }
         if(PlayersAllDead){//restart game
 
-            //todo- add save for score if is best score yett
             int combinedkills=0;
 
             for (int i = 0; i < players.length; i++) {
@@ -204,40 +207,27 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
 
             UpdateOveride=true;//force game state update
-            UpdateType=0;
         }else if(LevelManager.HatchCheck(players)){//player at hatch load next level
             LevelManager.NextLevel(players,enemys);
             UpdateOveride=true;//force game state update
-            UpdateType=0;
         }
 
 
         ((MainUIController)ui.getController()).ShowServerPerformance(tpf,MessageReaderS.TotalBytesRead,MessageReaderS.TotalBytesAfterDecompression,MessageWriterS.TotalBytesSent,MessageWriterS.TotalBytesAfterCompression);
-        if (!server.getConnections().isEmpty()&&ShouldUpdate) {
+        if (!server.getConnections().isEmpty()&&(ShouldUpdate||LevelManager.ShouldUpdate)) {
             ShouldUpdate=false;
 
             if(LevelManager.ShouldUpdate){
-                BroadCastLevelUpdate();
+                server.broadcast(GetLevelDataAsString());
                 LevelManager.ShouldUpdate=false;
             }
             UpdateUI();
             BroadCastPlayerUpdates();
             BroadCastEnemyUpdates();
-            BroadCastSpellUpdates();
-            switch (UpdateType){
-                case 0:
-                    BroadCastPlayerUpdates();
-                    break;
-                case 1:
-                    BroadCastEnemyUpdates();
-                    break;
-                case 2:
-                    BroadCastSpellUpdates();
-                    break;
-            }
-            UpdateType++;
-            if(UpdateType==3){
-                UpdateType=0;
+
+            if(UpdateOveride){//update override was performed
+                System.out.println("Update Overide Preformed----------------");
+                UpdateOveride=false;
             }
         }else{
             //no players connected, level file will be sent individualy as they join to save repeating the message
@@ -245,24 +235,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
                 LevelManager.ShouldUpdate=false;
             }
         }
-    }
-
-    void BroadCastLevelUpdate(){
-        Level level=LevelManager.GetCurrent();
-        StringBuilder levelUpdate= new StringBuilder();
-        levelUpdate.append("LEVELUPDATE,").append(LevelManager.CurrentLevel + 1).append(",").append(level.Width).append(",").append(level.Height).append(",|");
-        for (int y=0; y<level.Height; y++){
-            levelUpdate.append("LEVELDATA,").append(y);
-
-            for (int x=0; x<level.Width; x++){
-                levelUpdate.append(",").append(level.LevelData[y][x]);
-            }
-            levelUpdate.append(",|");
-
-
-        }
-        levelUpdate.append("LEVELUPDATECOMPLETE|");
-        server.broadcast(levelUpdate.toString());
     }
 
     void BroadCastPlayerUpdates(){
@@ -314,11 +286,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
 
         }
 
-
-        if(UpdateOveride){//update override was performed
-            System.out.println("Update Overide Preformed----------------");
-            UpdateOveride=false;
-        }
     }
 
 
@@ -423,7 +390,6 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
             }
             else if(command.equals("GAMESTATE")){//player is requesting an update of the game state to sync
                 UpdateOveride=true;
-                UpdateType=0;
             }
             else if(PlayerID!=-1) {
                 if (command.equals("KEY")) {

@@ -10,7 +10,7 @@ public class PlayerControllerComponent extends Component {
 
     public boolean Connected=false;
     public int PlayerID=-1;
-    private static final double PLAYER_SPEED = 100;
+    private static final double PLAYER_SPEED = 50;
 
     private static final float PLAYER_MAX_HEALTH = 100;
 

@@ -8,7 +8,7 @@ import javafx.geometry.Point2D;
 
 public class Enemy_Component  extends Component {
 
-    private static final double ENEMY_SPEED = 60;
+    private static final double ENEMY_SPEED = 30;
 
     private static final double DETECTION_RADIUS = 400;
     private static final double ATTACK_RADIUS = 50;
@@ -34,7 +34,7 @@ public class Enemy_Component  extends Component {
 
     public void DealDamage(SpellComponent spell){
         if(spell.isFireSpellType()!=Type_FireDemon){
-            Health-=25;
+            Health-=50;
             if(Health<=0){
                 physics.overwritePosition(new Point2D( -1000,-1500));
                 physics.setLinearVelocity(0,0);
