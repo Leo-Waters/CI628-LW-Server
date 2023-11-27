@@ -1,11 +1,6 @@
-# CI628-PongServer
-A simple server for multiplayer com.almasb.fxglgames.pong.
-
-### Run pre-built binary
-
-1. Go to [Releases](https://github.com/AlmasB/CI628-PongServer/releases)
-2. Download and unzip `ci628server-win.zip` on a Windows machine.
-3. In the unzipped directory, go to `bin` and run `Start-CI628server.bat`.
+# CI628- Dungen crawler by leo waters
+server code base stated as simple pong server by almas
+https://github.com/AlmasB/CI628-PongServer
 
 ### Build
 
