@@ -1,4 +1,4 @@
-# CI628- Dungen crawler by leo waters
+# CI628- Dungen crawler server by leo waters
 server code base stated as simple pong server by almas
 https://github.com/AlmasB/CI628-PongServer
 
