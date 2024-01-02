@@ -127,19 +127,19 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     private String GetLevelDataAsString() {
         Level level=LevelManager.GetCurrent();
         StringBuilder levelUpdate= new StringBuilder();
+        //starts a level update, 2 arguments width and height for array initalization
         levelUpdate.append("LEVELUPDATE,").append(LevelManager.CurrentLevel + 1).append(",").append(level.Width).append(",").append(level.Height).append(",|");
         for (int y=0; y<level.Height; y++){
+            //leveldata command contains a row of the 2D level data array
             levelUpdate.append("LEVELDATA,").append(y);
 
             for (int x=0; x<level.Width; x++){
                 levelUpdate.append(",").append(level.LevelData[y][x]);
             }
             levelUpdate.append(",|");
-
-
         }
+        //signifies the level update has finished
         levelUpdate.append("LEVELUPDATECOMPLETE|");
-
         return  levelUpdate.toString();
     }
 
@@ -258,13 +258,10 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
         StringBuilder message= new StringBuilder();
         for(int i=0;i<enemys.length;i++)//send updates for each players data
         {
-
             if(enemys[i].ShouldUpdate||UpdateOveride){
                 message.append("ENEMY_DATA,").append(i).append(",").append(enemys[i].getEntity().getX()).append(",").append(enemys[i].getEntity().getY()).append(",").append(enemys[i].GetHealth()).append(",").append(enemys[i].Type_FireDemon).append(",|");
-
                 enemys[i].ShouldUpdate=false;
             }
-
         }
         //send data to server
         if(!message.toString().isEmpty()){
@@ -324,10 +321,7 @@ public class DungenServer extends GameApplication implements MessageHandler<Stri
     @Override
     public void onReceive(Connection<String> connection, String message) {
 
-
-
         int PlayerID=connection.getLocalSessionData().getInt("ID");
-
 
         if(PlayerID==-1){//assign and ID to a spectator
             for (int i = 0; i < 4; i++) {

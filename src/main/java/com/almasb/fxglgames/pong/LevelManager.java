@@ -62,13 +62,11 @@ public class LevelManager {
         if(CurrentLevel==Levels.length){//ensure a level is always loaded, loop player back to begining
             CurrentLevel=0;
         }
-
         LevelEntities= new Entity[Levels[CurrentLevel].Width*Levels[CurrentLevel].Height];
-
         int PlayersLeft = players.length;
         int EnemysLeft = enemy.length;
         for (int x = 0; x < Levels[CurrentLevel].Width; x++) {
-            for (int y = 0; y < Levels[CurrentLevel].Height; y++) {
+            for (int y = 0; y < Levels[CurrentLevel].Height; y++) {//create level
                 if (Levels[CurrentLevel].LevelData[y][x] == 1) {
                     boolean WallNeeded=false;
                     //calculate if the wall is needed
@@ -83,21 +81,21 @@ public class LevelManager {
                     }
 
 
-                    if(WallNeeded) {
+                    if(WallNeeded) {//spawn wall
                         LevelEntities[(y * Levels[CurrentLevel].Width) + x] = spawn("Wall", new SpawnData(x * TileSize, y * TileSize));
                     }
                 }//end of level hatch------------------
-                else if (Levels[CurrentLevel].LevelData[y][x] == 6) {
+                else if (Levels[CurrentLevel].LevelData[y][x] == 6) { // set hatch position
                     HatchPos= new Point2D(x * TileSize, y * TileSize);
                 }
                 else {//entity checks-------------------------------------------------------------------
                     var spawnpos=new Point2D((x*TileSize)+(TileSize/4),(y*TileSize)+(TileSize/4));
-                    if (Levels[CurrentLevel].LevelData[y][x] == 4 && PlayersLeft != 0) {
+                    if (Levels[CurrentLevel].LevelData[y][x] == 4 && PlayersLeft != 0) { //set player positions
                         PlayersLeft--;
                         players[PlayersLeft].getEntity().setPosition(spawnpos);
                         players[PlayersLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(spawnpos);
                     }
-                    if (Levels[CurrentLevel].LevelData[y][x] == 5 && EnemysLeft != 0) {
+                    if (Levels[CurrentLevel].LevelData[y][x] == 5 && EnemysLeft != 0) { // set enemy positions
                         EnemysLeft--;
                         enemy[EnemysLeft].getEntity().setPosition(spawnpos);
                         enemy[EnemysLeft].getEntity().getComponent(PhysicsComponent.class).overwritePosition(spawnpos);

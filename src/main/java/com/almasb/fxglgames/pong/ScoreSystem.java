@@ -14,22 +14,17 @@ import java.util.List;
 import static java.awt.SystemColor.text;
 
 public class ScoreSystem {
-    public  static  int HighLevel;
-    public  static  int HighKills;
+    public  static  int HighLevel,HighKills;
     //load previous scores
     static  void LoadHighScore(){
         var ScorePath = Paths.get("ScoreSaves.txt");
         List<String> Scores= new ArrayList<>();
-
-        if (Files.exists(ScorePath)) {
+        if (Files.exists(ScorePath)) {//load old score
             try {
                 Scores= Files.readAllLines(ScorePath);
-
                 System.out.println("Loaded High Level"+ Scores.get(0) +" Kills "+ Scores.get(1));
-
                 HighLevel=Integer.parseInt(Scores.get(0));
                 HighKills=Integer.parseInt(Scores.get(1));
-
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -43,19 +38,17 @@ public class ScoreSystem {
 
     //save a score if it's higher than the previous high score
     static  void SaveNewHighScore(int level, int CombinedKills){
+        //is higher than old
         if(level>HighLevel||(level==HighLevel&&CombinedKills>HighKills)){
             //set new high score
             HighLevel=level;
             HighKills=CombinedKills;
-
-
             //file path
             var ScorePath = Paths.get("ScoreSaves.txt");
             //Array of lines representing different variables
             List<String> ScoreInfo= new ArrayList<>();
             ScoreInfo.add(String.valueOf(level));
             ScoreInfo.add(String.valueOf(CombinedKills));
-
             //try to write variables to file
             try {
                 Files.write(ScorePath,ScoreInfo);

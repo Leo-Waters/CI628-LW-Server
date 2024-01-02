@@ -96,6 +96,7 @@ public class PlayerControllerComponent extends Component {
 
     public void AddKillStat(){
         Kills++;
+        StatsChanged=true;
     }
 
     public int getKills() {
@@ -131,16 +132,14 @@ public class PlayerControllerComponent extends Component {
     }
 
     public void UpdateKey(String Info){
+        //fire spell
         if(Info.contains("CAST")){
             CastSpell(Info.contains("FIRE"));
             return;
         }
-
         var key=Info.charAt(0);
-        System.out.println(key);
-        System.out.println(Info);
+        //is key up or down
         boolean KeyActive=!Info.contains("UP");
-        System.out.println(KeyActive);
         switch (key){
             case 'W':
                 up=KeyActive;

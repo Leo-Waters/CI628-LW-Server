@@ -18,6 +18,7 @@ public class Level {
 
     private void LoadFromFile(String File) {
 
+        //open level file
         File LevelFile = new File("src/main/resources/assets/Levels/"+File+".txt");
         Scanner Reader = null;
         try {
@@ -27,7 +28,7 @@ public class Level {
             throw new RuntimeException(e);
         }
 
-        if(Reader.hasNextLine()){
+        if(Reader.hasNextLine()){//load width and height
             var size=Reader.nextLine().split(",");
             Width= Integer.parseInt(size[0]);
             Height=Integer.parseInt(size[1]);
@@ -35,14 +36,16 @@ public class Level {
         }else {
         System.out.println("Level File does not contain data");
         }
-
+        //initialize level data array
         LevelData=new int[Height][Width];
 
         int y=0;
         while (Reader.hasNextLine()){
+            //split comma seperated values
             var size=Reader.nextLine().replace(" ","").split(",");
             for (var x=0; x<Width; x++){
                 System.out.println("y"+y+" data"+size[x]);
+                //store loaded level data
                 LevelData[y][x]=Integer.parseInt(size[x]);
             }
             y++;
